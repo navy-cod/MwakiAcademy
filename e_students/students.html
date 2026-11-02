@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="students.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Student Management System - Mwaki University</title>
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <div class="header-left">
+                <h1>🎓 Student Management System</h1>
+                <p class="header-subtitle">Manage student records efficiently</p>
+            </div>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="totalStudents">0</span>
+                    <span class="stat-label">Total Students</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="avgGrade">0%</span>
+                    <span class="stat-label">Average Grade</span>
+                </div>
+            </div>
+            <button class="add-btn">
+                <span class="btn-icon">+</span> Add Student
+            </button>
+        </header>
+
+        <div class="controls-bar">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search by name, email or ID...">
+                <span class="search-icon">🔍</span>
+            </div>
+            <div class="sort-box">
+                <label for="sortSelect">Sort by:</label>
+                <select id="sortSelect">
+                    <option value="name">Name (A-Z)</option>
+                    <option value="nameDesc">Name (Z-A)</option>
+                    <option value="grade">Grade (Low to High)</option>
+                    <option value="gradeDesc">Grade (High to Low)</option>
+                    <option value="age">Age (Young to Old)</option>
+                    <option value="ageDesc">Age (Old to Young)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="student-container">
+            <!-- Student List Section -->
+            <div class="student-list">
+                <div class="student-list-title">Student List</div>
+                <div class="student-list-items"></div>
+            </div>
+
+            <!-- Student Detail Section -->
+            <div class="student-detail">
+                <div class="student-detail-title">Student Information</div>
+                <div class="student-detail-info"></div>
+            </div>
+        </div>
+
+        <!-- ADD STUDENT MODAL FORM -->
+        <div class="modal" id="addModal">
+            <form class="student-form" id="addForm">
+                <h2>➕ Add New Student</h2>
+                
+                <div class="form-row">
+                    <input type="text" name="firstName" placeholder="First Name" required>
+                    <input type="text" name="lastName" placeholder="Last Name" required>
+                </div>
+
+                <input type="text" name="studentId" placeholder="Student ID (e.g., MU-2024-001)" required>
+                <input type="email" name="email" placeholder="Email Address" required>
+                
+                <div class="form-row">
+                    <input type="text" name="contactNumber" placeholder="Phone Number" required>
+                    <input type="number" name="grade" placeholder="Grade Percentage (0-100)" required step="0.01">
+                </div>
+
+                <select name="course" required>
+                    <option value="">Select Course</option>
+                    <option value="BSc Computer Science">BSc Computer Science</option>
+                    <option value="BSc Information Technology">BSc Information Technology</option>
+                    <option value="BBA Business Administration">BBA Business Administration</option>
+                    <option value="BEd Education">BEd Education</option>
+                    <option value="BA Literature">BA Literature</option>
+                    <option value="BSc Nursing">BSc Nursing</option>
+                    <option value="BSc Mathematics">BSc Mathematics</option>
+                </select>
+
+                <input type="text" name="address" placeholder="Physical Address" required>
+                
+                <div class="form-row">
+                    <input type="date" name="dob" placeholder="Date of Birth" required>
+                    <input type="text" name="imageUrl" placeholder="Profile Image URL (optional)">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="student-form-submit">Save Student</button>
+                    <button type="button" class="cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- EDIT STUDENT MODAL FORM -->
+        <div class="edit-modal" id="editModal">
+            <form class="edit-form" id="editForm">
+                <h2>✏️ Edit Student</h2>
+                
+                <input type="hidden" name="editId" id="editId">
+
+                <div class="form-row">
+                    <input type="text" name="editFirstName" id="editFirstName" placeholder="First Name" required>
+                    <input type="text" name="editLastName" id="editLastName" placeholder="Last Name" required>
+                </div>
+
+                <input type="text" name="editStudentId" id="editStudentId" placeholder="Student ID" required>
+                <input type="email" name="editEmail" id="editEmail" placeholder="Email Address" required>
+                
+                <div class="form-row">
+                    <input type="text" name="editContactNumber" id="editContactNumber" placeholder="Phone Number" required>
+                    <input type="number" name="editGrade" id="editGrade" placeholder="Grade Percentage (0-100)" required step="0.01">
+                </div>
+
+                <select name="editCourse" id="editCourse" required>
+                    <option value="">Select Course</option>
+                    <option value="BSc Computer Science">BSc Computer Science</option>
+                    <option value="BSc Information Technology">BSc Information Technology</option>
+                    <option value="BBA Business Administration">BBA Business Administration</option>
+                    <option value="BEd Education">BEd Education</option>
+                    <option value="BA Literature">BA Literature</option>
+                    <option value="BSc Nursing">BSc Nursing</option>
+                    <option value="BSc Mathematics">BSc Mathematics</option>
+                </select>
+
+                <input type="text" name="editAddress" id="editAddress" placeholder="Physical Address" required>
+                
+                <div class="form-row">
+                    <input type="date" name="editDob" id="editDob" placeholder="Date of Birth" required>
+                    <input type="text" name="editImageUrl" id="editImageUrl" placeholder="Profile Image URL (optional)">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="student-form-submit">Update Student</button>
+                    <button type="button" class="cancel-btn edit-cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Toast Notifications Container -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script src="students.js"></script>
+    <!-- Remove the home-link-container from header and add this at the bottom of body -->
+<a href="../home.html" class="home-link-floating" title="Back to Home">
+    <i class="fas fa-home"></i>
+</a>
+</body>
+</html>

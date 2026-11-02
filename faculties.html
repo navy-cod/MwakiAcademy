@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Faculties - Mwaki University</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+  .faculty-table-container::before {
+    background-image: url('multimedia/comp.jpg');
+    filter: brightness(0.25); /* Adjust this value: 0 = black, 1 = normal */
+  }
+</style>
+</head>
+<body class="no-sidebar">
+  <header class="top-header">
+    <div class="logo-area">
+      <img src="multimedia/mwaki_logo.png" alt="Mwaki University Logo" onerror="this.src='https://placehold.co/60x60?text=Mwaki'">
+      <h1>MWAKI UNIVERSITY</h1>
+    </div>
+    <nav class="desktop-nav">
+      <a href="home.html">Home</a>
+      <a href="faculties.html" class="active">Programs</a>
+      <a href="admission.html">Admissions</a>
+      <a href="contact.html">Contact</a>
+      <a href="about.html">About</a>
+    </nav>
+  </header>
+
+  <main class="main-wrapper">
+    <h1 class="page-title"><i class="fas fa-book-open"></i> Our Faculties</h1>
+    <p class="page-subtitle">Mwaki University offers a diverse range of faculties designed to cater to the academic and professional aspirations of our students. Each faculty is committed to excellence in teaching, research, and community engagement.</p>
+
+    <!-- Faculties Table -->
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Faculty</th>
+            <th>Courses Offered</th>
+            <th>Admission Requirements</th>
+            <th>Academic Calendar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Science and Technology</td><td>BSc Computer Science<br>BSc Information Technology<br>BSc Mathematics</td><td>KCSE Mean Grade C+ and above<br>Minimum C+ in Mathematics & English</td><td>September Intake<br>January Intake</td></tr>
+          <tr><td>Business and Economics</td><td>BBA Business Administration<br>BCom Commerce<br>BSc Economics</td><td>KCSE Mean Grade C+ and above<br>Minimum C in Mathematics & English</td><td>September Intake<br>May Intake</td></tr>
+          <tr><td>Education</td><td>BEd Arts<br>BEd Science<br>Diploma in Education</td><td>KCSE Mean Grade C+ and above<br>Minimum C+ in teaching subjects</td><td>September Intake<br>January Intake</td></tr>
+          <tr><td>Arts and Humanities</td><td>BA Literature<br>BA History<br>BA Philosophy</td><td>KCSE Mean Grade C+ and above<br>Minimum C in English or Kiswahili</td><td>September Intake<br>January Intake</td></tr>
+          <tr><td>Health Sciences</td><td>BSc Nursing<br>BSc Public Health<br>Diploma in Clinical Medicine</td><td>KCSE Mean Grade C+ and above<br>Minimum C+ in Biology & Chemistry</td><td>September Intake<br>March Intake</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Faculty Details Cards -->
+    <div class="card-grid">
+      <div class="card"><h3><i class="fas fa-flask"></i> Science and Technology</h3><p>Focuses on cutting-edge scientific research and technological innovation. Programs include Computer Science, Information Technology, Environmental Science, and Engineering.</p><h4>Departments:</h4><ul><li><b>Computer Science:</b> BSc Software Engineering, BSc Computer Science, BSc Computer Technology</li><li><b>Information Technology:</b> Bachelor in IT, Bachelor in Business IT</li></ul></div>
+      <div class="card"><h3><i class="fas fa-chart-line"></i> Business and Economics</h3><p>Offering programs in Business Administration, Economics, Marketing, and Finance, this faculty prepares students for leadership roles in the corporate world.</p></div>
+      <div class="card"><h3><i class="fas fa-chalkboard-teacher"></i> Education</h3><p>Dedicated to training future educators, this faculty provides programs in Primary and Secondary Education, Curriculum Development, and Educational Leadership.</p></div>
+      <div class="card"><h3><i class="fas fa-palette"></i> Arts and Humanities</h3><p>This faculty nurtures creativity and critical thinking through programs in Literature, History, Philosophy, and Cultural Studies.</p></div>
+      <div class="card"><h3><i class="fas fa-heartbeat"></i> Health Sciences</h3><p>Focused on healthcare education, this faculty offers programs in Nursing, Public Health, and Medical Laboratory Sciences.</p></div>
+    </div>
+  </main>
+</body>
+</html>
