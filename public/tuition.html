@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuition - Mwaki University</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="no-sidebar">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="top-header">
+    <div class="logo-area">
+      <img src="multimedia/mwaki_logo.png" data-fallback="https://placehold.co/60x60?text=Mwaki" alt="Mwaki University Logo">
+      <p class="site-name">MWAKI UNIVERSITY</p>
+    </div>
+    <button class="nav-toggle" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="Toggle navigation menu">
+      <i class="fas fa-bars" aria-hidden="true"></i>
+    </button>
+    <nav class="desktop-nav" id="site-nav" aria-label="Main">
+      <a href="home.html">Home</a>
+      <a href="faculties.html">Programs</a>
+      <a href="admission.html">Admissions</a>
+      <a href="tuition.html" class="active" aria-current="page">Tuition</a>
+      <a href="contact.html">Contact</a>
+      <a href="about.html">About</a>
+      <a href="login.html" data-auth-link>Login</a>
+    </nav>
+  </header>
+
+  <main class="main-wrapper" id="main">
+    <h1 class="page-title"><i class="fas fa-coins" aria-hidden="true"></i> Tuition &amp; Fees</h1>
+    <p class="page-subtitle">Here you will find detailed information about Mwaki University's tuition structure, payment plans, and scholarships.</p>
+    <p class="status-note" id="tuitionStatus" role="status" hidden></p>
+
+    <div class="table-responsive">
+      <table class="tuition-table">
+        <thead>
+          <tr>
+            <th scope="col" rowspan="2">Program</th>
+            <th scope="colgroup" colspan="2">Tuition Fee (per year)</th>
+          </tr>
+          <tr>
+            <th scope="col">Academic Cost (KES)</th>
+            <th scope="col">Additional Fees (KES)</th>
+          </tr>
+        </thead>
+        <!-- These rows are the saved figures. tuition.js replaces them with live data from the
+             database; if that fails, visitors still see these. -->
+        <tbody id="tuitionBody">
+          <tr><td>BSc Computer Science</td><td>KSh 645,650</td><td>KSh 64,565</td></tr>
+          <tr><td>BBA Business Administration</td><td>KSh 581,085</td><td>KSh 58,109</td></tr>
+          <tr><td>BEd Education</td><td>KSh 516,520</td><td>KSh 51,652</td></tr>
+          <tr><td>BA Literature</td><td>KSh 451,955</td><td>KSh 45,196</td></tr>
+          <tr><td>BSc Nursing</td><td>KSh 774,780</td><td>KSh 77,478</td></tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" class="download-cell">
+              <a href="fee-structure.pdf" download class="btn"><i class="fas fa-download" aria-hidden="true"></i> Download Fee Structure</a>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Scholarship Info Card -->
+    <div class="card" style="margin-top: 2rem;">
+      <h2><i class="fas fa-graduation-cap" aria-hidden="true"></i> Financial Aid &amp; Scholarships</h2>
+      <p>Mwaki University offers various scholarship opportunities for deserving students. Contact the financial aid office for more information about:</p>
+      <ul style="margin-top: 1rem; list-style: disc; padding-left: 2rem;">
+        <li>Merit-based scholarships</li>
+        <li>Need-based financial aid</li>
+        <li>Sports and talent scholarships</li>
+        <li>Government funding programs</li>
+      </ul>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="tuition.js"></script>
+</body>
+</html>

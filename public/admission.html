@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admissions - Mwaki University</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="admission.js"></script>
+</head>
+<body class="no-sidebar">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="top-header">
+    <div class="logo-area">
+      <img src="multimedia/mwaki_logo.png" data-fallback="https://placehold.co/60x60?text=Mwaki" alt="Mwaki University Logo">
+      <p class="site-name">MWAKI UNIVERSITY</p>
+    </div>
+    <button class="nav-toggle" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="Toggle navigation menu">
+      <i class="fas fa-bars" aria-hidden="true"></i>
+    </button>
+    <nav class="desktop-nav" id="site-nav" aria-label="Main">
+      <a href="home.html">Home</a>
+      <a href="faculties.html">Programs</a>
+      <a href="admission.html" class="active" aria-current="page">Admissions</a>
+      <a href="tuition.html">Tuition</a>
+      <a href="contact.html">Contact</a>
+      <a href="about.html">About</a>
+      <a href="login.html" data-auth-link>Login</a>
+    </nav>
+  </header>
+
+  <main class="main-wrapper" id="main">
+    <h1 class="page-title"><i class="fas fa-pen-to-square"></i> Admissions</h1>
+    <p class="page-subtitle">Please fill out the online application form below to apply for your preferred program.</p>
+
+    <div id="successMessage" class="success-message">
+      <i class="fas fa-check-circle"></i> Application submitted successfully! You can now download your application form.
+    </div>
+
+      <div class="download-section" id="pdfDownloadSection">
+        <button id="downloadPDFBtn" class="btn btn-outline"><i class="fas fa-file-pdf"></i> DownloadYour Application (PDF)</button>
+      </div>
+
+    <div class="form-card">
+      <form id="admissionForm">
+        <h2>Personal Information</h2>
+        
+        <label for="fullname">Full Name:</label>
+        <input type="text" id="fullname" name="fullname" required>
+
+        <label for="email">Email Address:</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="phone">Phone Number:</label>
+        <input type="tel" id="phone" name="phone" required>
+
+        <label>Gender:</label>
+        <div class="radio-group">
+          <input type="radio" name="gender" id="male" value="Male">
+          <label for="male">Male</label>
+          <input type="radio" name="gender" id="female" value="Female">
+          <label for="female">Female</label>
+        </div>
+
+        <label for="dob">Date of Birth:</label>
+        <input type="date" id="dob" name="dob" required>
+
+        <label for="address">Physical Address:</label>
+        <input type="text" id="address" name="address" required>
+
+        <h2>Academic Information</h2>
+        
+        <label for="program">Choose Program:</label>
+        <select id="program" name="program" required>
+          <option value="">--Select Program--</option>
+          <option value="BSc Computer Science">BSc Computer Science</option>
+          <option value="BSc Information Technology">BSc Information Technology</option>
+          <option value="BBA Business Administration">BBA Business Administration</option>
+          <option value="BEd Education">BEd Education</option>
+          <option value="BA Literature">BA Literature</option>
+          <option value="BSc Nursing">BSc Nursing</option>
+          <option value="BSc Mathematics">BSc Mathematics</option>
+        </select>
+
+        <label for="kcseGrade">KCSE Mean Grade:</label>
+        <select id="kcseGrade" name="kcseGrade" required>
+          <option value="">--Select Grade--</option>
+          <option value="A">A (80+ points)</option>
+          <option value="A-">A- (75-79 points)</option>
+          <option value="B+">B+ (70-74 points)</option>
+          <option value="B">B (65-69 points)</option>
+          <option value="B-">B- (60-64 points)</option>
+          <option value="C+">C+ (55-59 points)</option>
+          <option value="C">C (50-54 points)</option>
+          <option value="C-">C- (45-49 points)</option>
+        </select>
+
+        <h2>Intake Information</h2>
+        
+        <label for="intake">Select Intake Year:</label>
+        <select id="intake" name="intake" required>
+          <option value="">--Select Year--</option>
+          <option value="2026">2026</option>
+          <option value="2027">2027</option>
+          <option value="2028">2028</option>
+        </select>
+
+        <label for="intakePeriod">Intake Period:</label>
+        <select id="intakePeriod" name="intakePeriod" required>
+          <option value="">--Select Period--</option>
+          <option value="September">September Intake</option>
+          <option value="January">January Intake</option>
+          <option value="May">May Intake</option>
+        </select>
+
+        <h2>Additional Information</h2>
+        
+        <label for="message">Why do you want to join Mwaki University?</label>
+        <textarea id="message" name="message" rows="4" required></textarea>
+
+        <label for="howHeard">How did you hear about us?</label>
+        <select id="howHeard" name="howHeard" required>
+          <option value="">--Select--</option>
+          <option value="Social Media">Social Media</option>
+          <option value="Friend/Family">Friend/Family</option>
+          <option value="School Visit">School Visit</option>
+          <option value="Radio/TV">Radio/TV</option>
+          <option value="Online Ad">Online Advertisement</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <div class="submit-container">
+          <button type="submit" class="btn"><i class="fas fa-paper-plane"></i> Submit Application</button>
+        </div>
+      </form>
+
+      <div id="pdfDownloadContainer" style="display: none;">
+        <button id="downloadPDF" class="pdf-download-btn"><i class="fas fa-file-pdf"></i> Download Application as PDF</button>
+      </div>
+    </div>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/nav.js"></script>
+</body>
+</html>
