@@ -854,3 +854,110 @@ body {
         right: 20px;
     }
 }
+
+/* =====================================================================
+   PHASE 3 ADDITIONS  (database-backed student manager)
+   Everything above this line is your original stylesheet, unchanged.
+   ===================================================================== */
+
+[hidden] { display: none !important; }
+
+/* Header: signed-in user + add button stacked on the right */
+.header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    position: relative;
+    z-index: 1;
+}
+.header-user { color: rgba(255, 255, 255, 0.92); font-size: 0.85rem; }
+.link-btn {
+    background: none;
+    border: 0;
+    color: #fff;
+    text-decoration: underline;
+    cursor: pointer;
+    font: inherit;
+    margin-left: 6px;
+}
+.add-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+/* List rows now contain real <button>s (keyboard accessible) instead of clickable <i>/<div> */
+.student-select {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: 0;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    padding: 0;
+}
+.student-edit, .student-delete { background: none; border: 0; color: inherit; font-family: inherit; }
+.student-select:focus-visible, .student-edit:focus-visible, .student-delete:focus-visible,
+.link-btn:focus-visible, .cancel-btn:focus-visible, .page-btn:focus-visible,
+.edit-detail-btn:focus-visible, .delete-detail-btn:focus-visible, .add-btn:focus-visible {
+    outline: 3px solid var(--primary-light);
+    outline-offset: 2px;
+}
+
+/* Initials avatar: shown when a student has no photo (or the photo cannot be loaded) */
+.initials {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--accent) 100%);
+    color: #fff;
+    font-weight: 700;
+    border-radius: 50%;
+    flex: 0 0 auto;
+}
+.student-item-avatar.initials { width: 35px; height: 35px; font-size: 0.8rem; border: 2px solid rgba(255, 255, 255, 0.3); }
+/* matches the class students.js gives the detail panel's placeholder: "detail-avatar initials" */
+.detail-avatar.initials { width: 120px; height: 120px; font-size: 2.4rem; border: 5px solid var(--primary); box-shadow: 0 8px 20px var(--shadow); }
+
+/* Pagination under the list */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 4px 0;
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+.page-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 2px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    font-weight: 600;
+    cursor: pointer;
+}
+.page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.page-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Form: label + input + error message per field */
+.student-form .field { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+.student-form label { font-size: 0.8rem; font-weight: 600; color: var(--text-light); }
+.field-error { color: var(--danger); font-size: 0.82rem; margin: 0 0 6px; }
+.student-form [aria-invalid="true"] { border-color: var(--danger); background: #fff8f7; }
+.form-alert {
+    background: #fdecea;
+    border: 1px solid #f5c2c0;
+    color: #8a1f17;
+    padding: 10px 14px;
+    border-radius: 12px;
+    text-align: left;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .header-actions { align-items: stretch; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

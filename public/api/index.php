@@ -11,8 +11,12 @@ declare(strict_types=1);
  */
 
 use Mwaki\Auth;
+use Mwaki\Controllers\AdminController;
+use Mwaki\Controllers\ApplicationController;
 use Mwaki\Controllers\AuthController;
+use Mwaki\Controllers\InquiryController;
 use Mwaki\Controllers\ProgramController;
+use Mwaki\Controllers\StudentController;
 use Mwaki\Controllers\StatsController;
 use Mwaki\Http;
 use Mwaki\Router;
@@ -38,12 +42,29 @@ if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
 }
 
 // The route table: METHOD + URL pattern -> [controller class, method name].
-// Phases 2 and 3 add more lines here.
 $router = new Router();
 $router->add('GET',  '/api/session',     [AuthController::class,    'session']);
 $router->add('POST', '/api/auth/login',  [AuthController::class,    'login']);
 $router->add('POST', '/api/auth/logout', [AuthController::class,    'logout']);
 $router->add('GET',  '/api/programs',    [ProgramController::class, 'index']);
 $router->add('GET',  '/api/stats',       [StatsController::class,   'index']);
+
+// Public forms (no sign-in needed) ...
+$router->add('POST', '/api/applications',        [ApplicationController::class, 'create']);
+$router->add('GET',  '/api/applications/status', [ApplicationController::class, 'status']);
+$router->add('POST', '/api/inquiries',           [InquiryController::class,     'create']);
+
+// Phase 3: staff-only routes. Each controller method starts with Auth::requireUser(...), so a
+// missing sign-in is 401 and a wrong role is 403, whatever the browser does or does not show.
+$router->add('GET',    '/api/students',          [StudentController::class, 'index']);
+$router->add('POST',   '/api/students',          [StudentController::class, 'create']);
+$router->add('GET',    '/api/students/{id}',     [StudentController::class, 'show']);
+$router->add('PUT',    '/api/students/{id}',     [StudentController::class, 'update']);
+$router->add('DELETE', '/api/students/{id}',     [StudentController::class, 'destroy']);
+
+$router->add('GET',    '/api/applications',      [AdminController::class, 'applications']);
+$router->add('PATCH',  '/api/applications/{id}', [AdminController::class, 'updateApplication']);
+$router->add('GET',    '/api/inquiries',         [AdminController::class, 'inquiries']);
+$router->add('PATCH',  '/api/inquiries/{id}',    [AdminController::class, 'updateInquiry']);
 
 $router->dispatch($method, Http::path());

@@ -1,0 +1,7 @@
+{
+  "name": "mwaki-browser-tests",
+  "private": true,
+  "description": "Optional developer tests: run the real page scripts in a simulated browser (jsdom) against the real PHP server.",
+  "scripts": { "test": "bash run.sh" },
+  "devDependencies": { "jsdom": "^24.1.0" }
+}

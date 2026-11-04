@@ -1,166 +1,214 @@
-# Mwaki University web app - Phase 2
+# Mwaki University web app
 
-Your static site, extended with a PHP back end and a JavaScript front end.
+Your static university site, extended into a full web app: PHP back end, SQLite database, JavaScript front end,
+built as a **learning artifact**. Read `docs/CONCEPTS.md` for a guided tour of every idea in the code; the code
+itself explains each concept in comments where it first appears.
 
-* **Phase 1** (delivered): server foundation, SQLite database, sign-in (sessions + CSRF), programs catalogue,
-  responsive navigation, Login / Account / Tuition pages.
-* **Phase 2** (this delivery): **Admission** form, **application tracking**, and the **Contact** form
-  (with and without JavaScript).
-* **Phase 3** (next): Student manager (full CRUD) and the staff Admin page.
+| What | Where |
+|---|---|
+| Public site, responsive navigation | `home.html`, `about.html`, `history.html`, `faculties.html` |
+| Programs and tuition from the database | `tuition.html`, `GET /api/programs` |
+| Online admission, PDF receipt, application tracking | `admission.html` |
+| Contact form (works with and without JavaScript) | `contact.html`, `submit_inquiry.php` |
+| Staff sign-in, account page and statistics | `login.html`, `details.html` |
+| Student manager (search, sort, pages, add, edit, delete) | `e_students/students.html` |
+| Staff admin: review applications, handle messages | `admin.html` |
 
 ## 1. Requirements
 
-* **PHP 8.1 or newer** with the `pdo_sqlite` and `mbstring` extensions.
-  Check: `php -v` and `php -m` (look for `pdo_sqlite` and `mbstring`).
-  * XAMPP on Windows: in `php.ini` make sure `extension=pdo_sqlite`, `extension=sqlite3` and
-    `extension=mbstring` have no leading `;`. Use the full path, e.g. `C:\xampp\php\php.exe`.
-* No Composer, no Node, no database server. SQLite is a single file.
+* **PHP 8.1 or newer** with `pdo_sqlite` and `mbstring`. Check: `php -v` and `php -m`.
+  * XAMPP on Windows: in `php.ini` remove the `;` before `extension=pdo_sqlite`, `extension=sqlite3`, `extension=mbstring`.
+    Use the full path to PHP, e.g. `C:\xampp\php\php.exe`.
+* No Composer, no database server. (Node is needed **only** for the optional browser tests.)
 
 ## 2. Setup and run
 
 ```bash
-# 1. Put your own media next to the pages (they were not part of the upload):
-#       public/multimedia/   (mwaki_logo.png, college.mp4, tuition_block.jpg, exam_prep.mp3, ...)
-#       public/fee-structure.pdf
+# 1. Copy your own media next to the pages (they were not part of the upload):
+#       public/multimedia/        public/fee-structure.pdf
 
-# 2. Create the database and the two staff accounts. Passwords are printed ONCE - copy them.
-#    (Already did this in Phase 1? You do NOT need to repeat it: the database is kept and this
-#     delivery changes no tables. Running it again is harmless.)
+# 2. Create the database and two staff accounts. Passwords are printed ONCE - copy them.
 php database/seed.php
 
-# 3. Start the development server. -t public makes /public the web root.
+# 3. Start the development server (-t public makes /public the web root)
 php -S localhost:8000 -t public router.php
 ```
 
-Open <http://localhost:8000>. Stop the server with Ctrl+C.
+Open <http://localhost:8000>. Sign in at `/login.html` as `admin` or `staff` with the printed passwords.
+Upgrading from Phase 2? Replace the files, keep `storage/mwaki.sqlite` and `public/multimedia/`. **No database change.**
 
-**Upgrading from Phase 1:** replace your project files with this delivery's, keep your `storage/mwaki.sqlite`
-and your `public/multimedia/` folder. No database change is needed.
+## 3. Who can do what
 
-## 3. Folder map
+| | Visitor | Staff | Admin |
+|---|:-:|:-:|:-:|
+| Browse the site, see programs and tuition | yes | yes | yes |
+| Apply for admission, track an application, send a message | yes | yes | yes |
+| View the Account page and statistics | | yes | yes |
+| List / search / add / edit students | | yes | yes |
+| Review applications, handle messages | | yes | yes |
+| **Delete a student** | | | **yes** |
+
+These rules are enforced by the **server** on every request. Hiding a button is only a courtesy.
+There is no in-app user management: the two accounts come from `database/seed.php` (see Known limits).
+
+## 4. API reference
+
+All bodies are JSON. Every request that changes data (POST/PUT/PATCH/DELETE) needs the `X-CSRF-Token` header (get it from `GET /api/session`; `public/js/api.js` does this for you).
+
+| Method and URL | Who | What it does |
+|---|---|---|
+| `GET /api/session` | anyone | the signed-in user (or null) and the CSRF token |
+| `POST /api/auth/login`, `POST /api/auth/logout` | anyone | sign in / out (5 failed tries per 15 min are throttled) |
+| `GET /api/programs` | anyone | programs with fees, minimum KCSE grade and **upcoming** intakes |
+| `GET /api/stats` | staff | counts and averages for the Account page |
+| `POST /api/applications` | anyone | submit an application (201 + reference number) |
+| `GET /api/applications/status?ref=&email=` | anyone with both | status of one application |
+| `GET /api/applications?status=&q=&page=&perPage=` | staff | review list with counts |
+| `PATCH /api/applications/{id}` | staff | `{"status": "pending" \| "approved" \| "rejected"}` |
+| `POST /api/inquiries` | anyone | send a contact message |
+| `GET /api/inquiries?handled=0\|1&page=&perPage=` | staff | messages with counts |
+| `PATCH /api/inquiries/{id}` | staff | `{"handled": true \| false}` |
+| `GET /api/students?q=&sort=&page=&perPage=` | staff | one page of students + header statistics |
+| `POST /api/students` | staff | create (201) |
+| `GET /api/students/{id}`, `PUT /api/students/{id}` | staff | read one / replace one |
+| `DELETE /api/students/{id}` | **admin only** | delete (204) |
+| `POST /submit_inquiry.php` | anyone | the no-JavaScript contact form (answers with a 303 redirect) |
+
+`sort` is one of `name`, `nameDesc`, `grade`, `gradeDesc`, `age`, `ageDesc`. Errors look like
+`{"message": "...", "code": "duplicate", "errors": {"email": "..."}}`.
+
+## 5. Folder map
 
 ```
 router.php              dev-server helper (routes /api/*, serves .html with security headers)
-config/config.php       every setting in one place
-src/                    PHP classes (private: NOT inside the web root)
-  Intakes.php             which intakes are still open (calculated from today's date)       [Phase 2]
-  InquiryService.php      contact-message rules shared by the JSON API and the classic form [Phase 2]
-  Controllers/            AuthController, ProgramController, StatsController,
-                          ApplicationController, InquiryController                          [last two: Phase 2]
-database/               schema.sql, seed.php, students.json (seed data)
-storage/                mwaki.sqlite appears here (private)
-tests/api-smoke.sh      90 automated checks for the back end
-public/                 the web root: everything the browser may request
-  api/index.php         front controller for /api/*
-  submit_inquiry.php    the "classic" form handler for contact.html                       [Phase 2]
-  js/                   api.js (fetch wrapper), ui.js (helpers), nav.js (menu + login link)
-  admission.html/.js    application form, receipt/PDF, tracking                          [Phase 2]
-  contact.html/.js      contact form                                                      [Phase 2]
-  login / details / tuition .html + .js           (Phase 1)
-  e_students/           the student manager (unchanged until Phase 3)
+config/config.php      every setting in one place
+src/                   PHP classes (private: NOT inside the web root)
+  bootstrap.php, Http.php, HttpException.php, Router.php, Database.php, Validator.php, Auth.php
+  Intakes.php, InquiryService.php
+  Controllers/         Auth, Program, Stats, Application, Inquiry, Student, Admin
+database/              schema.sql, seed.php, students.json (seed data; no longer public)
+storage/               mwaki.sqlite appears here (private)
+docs/CONCEPTS.md       guided tour of the ideas in the code
+tests/api-smoke.sh     188 automated back-end checks (needs only bash, curl, php)
+tests/browser/         OPTIONAL 180 front-end behaviour checks (needs Node)
+public/                the web root: everything the browser may request
+  api/index.php        front controller for /api/*
+  submit_inquiry.php   no-JavaScript contact form handler
+  js/                  api.js (fetch wrapper), ui.js (safe DOM helpers), nav.js (menu, login link)
+  *.html, *.js         one script per page (login.js, details.js, tuition.js, admission.js, contact.js, admin.js)
+  style.css            site styles (each phase appended a block; originals untouched)
+  e_students/          students.html / .js / .css : the student manager
 ```
 
-## 4. What Phase 2 changed
+## 6. Everything that changed from your original upload
 
-New files: `src/Intakes.php`, `src/InquiryService.php`, `src/Controllers/ApplicationController.php`,
-`src/Controllers/InquiryController.php`, `public/submit_inquiry.php`, `public/contact.js`.
+* **Moved:** every page, `style.css` and `admission.js` into `public/`; the student files into `public/e_students/`.
+  `students.json` is now only `database/students.json` (the seed); the public copy was **deleted** because a browser
+  no longer needs it and it exposed personal data.
+* **`login.html`:** posts through the API (no password in the URL); the "Skin Complexion" box and the unused email box were
+  removed; "Remember my username" (localStorage) added. **`details.html`:** now "My Account". **`tuition.html`:** repaired
+  `<head>`, table filled from the database. **Every page:** shared header + menu button, skip link, no inline handlers.
+* **`admission.html` / `admission.js`:** rebuilt on the API (the JS file was empty). **`contact.html`:** form upgraded; `submit_inquiry.php` written.
+* **`e_students/students.html` / `.js`:** rewritten on the API. Your look (`students.css`) is kept; a block was appended.
+  The data now **persists**, requires sign-in, searches/sorts/pages on the server, and no longer uses `innerHTML` or inline handlers.
+* **Left untouched on purpose:** the 2010 vs 1978 founding-year contradiction between `about.html` and `history.html`, the marquee
+  text, the dated news items, the demo table on the login page, `faculties.html` copy, and the KCSE option labels. Those are content decisions for you.
 
-Rewritten: `public/admission.html` and `public/admission.js` (the JS file was empty in your upload),
-and the form part of `public/contact.html`.
+## 7. Where data lives
 
-Edited Phase 1 files (please replace yours):
-
-| File | Change |
-|---|---|
-| `config/config.php` | added `intake_months` (when each intake starts) |
-| `src/Controllers/ProgramController.php` | each program now carries `upcomingIntakes`; the old top-level `intakeYears` list was removed because it could list years with nothing left to apply for |
-| `public/api/index.php` | three new routes |
-| `public/style.css` | a "PHASE 2 ADDITIONS" block appended; nothing above it edited |
-| `tests/api-smoke.sh` | 47 new checks |
-
-Changes to the forms you had:
-
-* Admission: the program list, intake years and periods now come from the server, so the page can no longer offer
-  intakes that already started. Field `name` attributes became the API's names (`fullName`, `programId`,
-  `intakeYear`, `motivation`); the `id`s (used by the labels) are unchanged. The two PDF buttons became one.
-  The KCSE grade options and their labels are exactly as you had them.
-* Contact: gained a hidden spam-trap field, per-field error messages and a character counter.
-  `action="submit_inquiry.php" method="post"` is kept, so it works with JavaScript switched off.
-
-## 5. The rules the server enforces on an application
-
-Browser checks are a convenience; these are the real rules (`ApplicationController.php`):
-
-1. Every field is well-formed (email, Kenyan phone number, real calendar date, lengths ...).
-2. The program must exist; the KCSE grade must be **at least the program's minimum** (C+ for all programs today).
-3. The intake must be one the program offers **and must not have started** (an intake is open until its first day).
-4. The applicant must be **at least 15 years old**. (My assumption, to catch typos such as a 2025 birth year. Change `MIN_AGE`.)
-5. The same email may not apply to the same program + intake twice, unless the earlier application was rejected (HTTP 409).
-6. The applicant cannot choose their own status; new applications are always `pending`.
-
-## 6. Where data lives, and how to look at it
-
-`storage/mwaki.sqlite`. Open it with <https://sqlitebrowser.org/> or:
+`storage/mwaki.sqlite`. Inspect with <https://sqlitebrowser.org/> or:
 
 ```bash
-sqlite3 storage/mwaki.sqlite "SELECT reference, full_name, status, intake_period, intake_year FROM applications;"
-sqlite3 storage/mwaki.sqlite "SELECT name, email, handled, created_at FROM inquiries;"
+sqlite3 storage/mwaki.sqlite "SELECT reference, full_name, status FROM applications;"
+sqlite3 storage/mwaki.sqlite ".tables"
 ```
 
-(Phase 3 adds an admin page for this.) To start over: stop the server, delete the file, run `php database/seed.php`.
+Tables: `users`, `programs`, `students`, `applications`, `inquiries`, `login_attempts` (see `database/schema.sql`).
+To start over: stop the server, delete that file, run `php database/seed.php`.
 
-## 7. Testing
-
-Automated (Mac, Linux, WSL, or Git Bash). It uses a throw-away database and port 8765:
+## 8. Testing
 
 ```bash
-bash tests/api-smoke.sh        # expect: Result: 90 passed, 0 failed
+bash tests/api-smoke.sh              # back end: expect "Result: 188 passed, 0 failed"
+bash tests/browser/run.sh            # OPTIONAL front end (Node 18+): expect "All browser suites passed."
 ```
 
-Manual checklist, Phase 2 (server running):
+Both use throw-away databases and never touch `storage/`. The automated tests do **not** check how pages *look*,
+the PDF in a real browser, or Windows/XAMPP: use the manual checklist for those.
 
-**Admission**
-1. Open `admission.html`. The program drop-down lists 7 programs grouped by faculty.
-2. Choose *BSc Computer Science*: "Select Intake Year" offers only future years; choosing a year offers only that
-   year's remaining periods. Choose *BSc Nursing* instead: March and September appear (not January).
-3. Choose *BSc Computer Science* and KCSE grade *C*: a yellow warning appears. Pick *B*: it disappears.
-4. Leave a required box empty and submit: the browser points at it. Submit with grade *C* anyway: the **server's**
-   message appears under the grade field.
-5. Fill everything correctly and submit: a green banner, a receipt with a reference like `MU-2027-K7F3QA`, and the form is hidden.
-6. Click "Download your application (PDF)": a PDF named after your reference (or, if it cannot be made, the browser's
-   print window opens: choose "Save as PDF").
-7. Click "Start another application", enter the same email, program and intake: you are told you already applied.
-8. Under "Track your application" enter the reference and email: you see "Under review". Change one letter of the
-   email: you get the same "could not find" message as for a wrong reference.
+### Manual verification checklist (all features)
 
-**Contact**
-9. Open `contact.html`, type in the message box: the counter changes. Submit it empty-ish ("hi"): messages appear beside the fields.
-10. Send a real message: the thank-you appears without a page reload. Send 4 within an hour using the same email: the 4th is refused.
-11. **No-JavaScript path:** in your browser's developer tools turn JavaScript off (or use `curl`), submit the form:
-    you are redirected to `contact.html?sent=1` and see the thank-you. Press Refresh: nothing is sent twice.
-12. Check the database (section 6): your messages are there; a message sent with the hidden "website" field filled is not.
+Server running. Tick each box.
 
-**Staff statistics:** sign in (Phase 1) and open `details.html`: "Applications pending" and "New inquiries" now count what you submitted.
+**1. Responsive shell**
+- [ ] `http://localhost:8000/` redirects to `home.html`; styles load; narrow the window below 768 px: a menu button appears, opens/closes the menu, Esc closes it.
+- [ ] `about.html`, `faculties.html`: content is centred, no empty strip on the left.
 
-## 8. Known limits (so nothing is a surprise)
+**2. Programs and tuition**
+- [ ] `tuition.html` lists 7 programs; BSc Information Technology and BSc Mathematics say the fee is to be confirmed.
+- [ ] DevTools > Network > right-click the `programs` request > *Block request URL*, reload: the saved rows stay and a notice says live data could not be loaded.
 
-* **PDF download** uses the third-party html2pdf library from a CDN. It was tested here with a stand-in, not in a
-  real browser. If it is blocked or fails, the page falls back to the print dialog. The CDN `<script>` has no integrity
-  (SRI) hash because it could not be fetched here to compute one.
-* **Duplicate applications** are prevented by a check inside a transaction, not by a database rule. Two submissions in
-  the same instant could, rarely, both succeed. The bullet-proof fix is a UNIQUE index, which changes the schema, so it
-  is **not** applied without your say-so.
-* **Contact throttle** limits per email (3/hour) and in total (60/hour) because the table has no IP column. Someone
-  using many different emails could use up the total. An `ip` column would fix that (also a schema change).
-* **No emails are sent.** Applicants see their reference on screen and in the PDF; staff review comes in Phase 3.
-* **Reference lookups** are not rate-limited; guessing needs a valid reference AND the matching email.
-* The KCSE option labels ("A (80+ points)" ...) are kept as you wrote them, although real KCSE mean grades are
-  worked out from points out of 12. That is a content question for you, not a code one.
+**3. Sign-in, account, roles**
+- [ ] `details.html` while signed out sends you to `login.html?next=details.html`.
+- [ ] Wrong password: red message, box empties. Five wrong tries: "wait about 15 minutes".
+- [ ] Sign in as `admin`: Account page shows role, member-since date, four statistics, a program table; the menu now shows **Account** and **Logout**.
+- [ ] DevTools > Network: login is `POST /api/auth/login`, the password is in the body (never the URL), the cookie has `HttpOnly` and `SameSite=Lax`.
+- [ ] "Remember my username", sign out, return: the username is filled in. Logout makes `details.html` protected again.
 
-## 9. Troubleshooting
+**4. Admission**
+- [ ] Choose *BSc Computer Science*: only future years/periods appear; *BSc Nursing* offers March and September.
+- [ ] Grade *C* for Computer Science shows a yellow warning; submit anyway and the **server's** message appears under the grade.
+- [ ] A correct application shows a green banner and a reference like `MU-2027-K7F3QA`; the PDF button gives a PDF (or opens print: choose "Save as PDF").
+- [ ] "Start another application" with the same email/program/intake: told you already applied.
 
-* `could not find driver` - the `pdo_sqlite` extension is not enabled (see Requirements).
-* `Address already in use` - use another port: `php -S localhost:8080 -t public router.php`.
-* Program list on the admission page says it could not load - is the server running? Open `/api/programs` directly.
-* "No intakes are currently open" - every intake for that program has already started; the list is calculated from today's date.
+**5. Tracking**
+- [ ] Reference + email shows "Under review". A wrong email gives the same "could not find" message as a wrong reference.
+
+**6. Contact**
+- [ ] The character counter changes; "hi" shows errors beside fields; a valid message shows a thank-you with no reload; the 4th in an hour with one email is refused.
+- [ ] With JavaScript off (DevTools > Settings > Disable JavaScript) the form still works and redirects to `contact.html?sent=1`; Refresh does not resend.
+
+**7. Student manager** (`e_students/students.html`)
+- [ ] Signed out: sent to login. Signed in: 5 students per page, "Page 1 of 2", Next/Prev work.
+- [ ] Type in the search box: results update after a short pause; typing `%` finds nobody; sorting changes the order.
+- [ ] **Add** a student with an existing email: the message appears under the email field; with valid data the student is added and shown on the right.
+- [ ] **Edit** it, change the grade; refresh the browser: the change is still there (it is stored).
+- [ ] As `staff`: no Delete buttons. As `admin`: Delete asks for confirmation, then removes the student.
+
+**8. Admin page** (`admin.html`)
+- [ ] After submitting a few applications and messages: the tabs show counts; Approve/Reject change a row's status and the totals.
+- [ ] The applicant's tracking page now shows the new status. Messages can be marked handled and moved between the *New* and *Handled* lists. Arrow keys move between the two tabs.
+
+**9. Security spot checks**
+- [ ] Visit `/src/bootstrap.php`, `/config/config.php`, `/database/students.json`, `/storage/mwaki.sqlite`: all 404.
+- [ ] Add a student whose first name is `<b>Bold</b>`: it appears as literal text, not bold.
+
+## 9. Known limits
+
+* **PDF download** uses the third-party html2pdf library from a CDN, tested only with a stand-in; if it fails the print dialog opens.
+  The CDN scripts and stylesheets have no integrity (SRI) hashes (they could not be fetched here to compute them).
+* **Duplicate applications** are blocked by a check inside a transaction, not by a database rule; two submissions in the same
+  instant could both succeed. A UNIQUE index would fix it (a schema change, not applied without your approval).
+* **Contact throttle** is per email and in total (no IP column). A `ip` column would improve it (also a schema change).
+* **No user management or password change** in the app: accounts exist only from the seed script. If a password is lost, delete
+  `storage/mwaki.sqlite` and re-seed (this erases all data), or change the hash by hand in the `users` table.
+* **Lost updates:** if two staff edit the same student at once, the last save wins (no version check).
+* **Audit trail** is a line in the server log, not a table. **No emails** are sent anywhere.
+* **Approving an application does not create a student.** **Reference lookups** are not rate-limited.
+* `public/multimedia/` and `fee-structure.pdf` are yours to supply. Apache/Nginx/XAMPP configuration is not included
+  (the project targets `php -S`); on Windows/XAMPP nothing here was tested.
+
+## 10. Troubleshooting
+
+* `could not find driver`: enable the `pdo_sqlite` extension (Requirements).
+* `Address already in use`: `php -S localhost:8080 -t public router.php`.
+* Student manager or admin page sends you to the login page: you are signed out or the session expired (30 minutes idle).
 * Developer error details: `MWAKI_DEBUG=1 php -S localhost:8000 -t public router.php` (never on a real server).
+
+## 11. Exercises (stretch)
+
+1. Add a `UNIQUE` index to stop duplicate applications, and an `ip` column to throttle the contact form.
+2. Turn an approved application into a student with one click (a transaction across two tables).
+3. Add a "change password" page and a user-management screen for admins.
+4. Add a `version` column and reject an update if someone else saved first (optimistic locking, HTTP 409/412).
+5. Write a new smoke test, then break the code on purpose and watch it fail.

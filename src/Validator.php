@@ -142,6 +142,22 @@ final class Validator
                 return ($isUrl && parse_url((string) $value, PHP_URL_SCHEME) === 'https')
                     ? null : "$label must be a web address starting with https://";
 
+            case 'pattern':   // "pattern:^MU-\d{4}-\d{3,4}$"  a regular expression (everything after the first colon)
+                return preg_match('~' . $argument . '~', (string) $value) === 1
+                    ? null : "$label is not in the expected format.";
+
+            case 'bool':      // true/false (also accepts 1/0 and "true"/"false") and converts to a real boolean
+                if (is_bool($value)) {
+                    return null;
+                }
+                $words = ['1' => true, 'true' => true, '0' => false, 'false' => false];
+                $key = strtolower((string) $value);
+                if (array_key_exists($key, $words)) {
+                    $value = $words[$key];
+                    return null;
+                }
+                return "$label must be true or false.";
+
             case 'phone':
                 $normalised = self::normalizePhone((string) $value);
                 if ($normalised === null) {

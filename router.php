@@ -55,9 +55,7 @@ if (!$isInsidePublic) {
 }
 
 if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'html') {
-    // TEMPORARY: the old student manager still uses inline event handlers, which the strict
-    // Content-Security-Policy would block. Phase 3 rewrites it and this exception goes away.
-    Http::securityHeaders(!str_starts_with($path, '/e_students/'));
+    Http::securityHeaders();
     header('Content-Type: text/html; charset=utf-8');
     header('Cache-Control: no-cache');
     readfile($file);

@@ -98,10 +98,10 @@ final class Http
      *  - Content-Security-Policy (CSP)   a whitelist of where scripts, styles, images may come from.
      *    Even if an attacker injected <script src="evil.js">, the browser would refuse to load it.
      *
-     * $strictCsp = false is a TEMPORARY exception for the old student page, whose
-     * code still uses inline onclick="..." handlers. Phase 3 rewrites it and removes this.
+     * Every page now uses the same strict policy: no inline scripts anywhere. (Until Phase 3 the old
+     * student page needed an exception because it used inline onclick="..." handlers.)
      */
-    public static function securityHeaders(bool $strictCsp = true): void
+    public static function securityHeaders(): void
     {
         header('X-Content-Type-Options: nosniff');
         header('Referrer-Policy: strict-origin-when-cross-origin');
@@ -110,7 +110,7 @@ final class Http
 
         $csp = [
             "default-src 'self'",
-            "script-src 'self' https://cdnjs.cloudflare.com" . ($strictCsp ? '' : " 'unsafe-inline'"),
+            "script-src 'self' https://cdnjs.cloudflare.com",      // no 'unsafe-inline': injected scripts cannot run",
             // 'unsafe-inline' for styles because the original pages use style="..." attributes.
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
             "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
