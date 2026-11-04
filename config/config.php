@@ -52,4 +52,8 @@ return [
     // KCSE mean grades from lowest to highest. Phase 2 compares an applicant's grade with
     // a program's minimum by comparing positions in this list.
     'kcse_order' => ['E', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A'],
+
+    // The month each intake starts. An intake counts as "open" until its first day, so on
+    // 3 Nov 2026 the January, March, May and September 2026 intakes are all closed.
+    'intake_months' => ['January' => 1, 'March' => 3, 'May' => 5, 'September' => 9],
 ];

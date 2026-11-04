@@ -36,22 +36,41 @@
     <p class="page-subtitle">If you have any questions or inquiries, please use the form below or reach us through our contact details.</p>
 
     <div class="card-grid contact-grid">
-      <!-- Inquiry Form -->
+      <!-- Inquiry Form. Works with JavaScript off (the browser posts to submit_inquiry.php);
+           contact.js upgrades it to fetch() so the page does not reload. -->
       <div class="form-card">
-        <form action="submit_inquiry.php" method="post">
+        <div id="contactSuccess" class="success-message" role="status" tabindex="-1">
+          <i class="fas fa-check-circle" aria-hidden="true"></i> Thank you! Your message has been sent. We will reply to the email address you gave.
+        </div>
+
+        <form id="contactForm" action="submit_inquiry.php" method="post">
+          <div class="form-alert" data-form-error role="alert" hidden></div>
+
           <label for="name">Full Name:</label>
-          <input type="text" id="name" name="name" required>
+          <input type="text" id="name" name="name" required minlength="2" maxlength="100" autocomplete="name">
+          <p class="field-error" data-error-for="name" hidden></p>
 
           <label for="email">Email Address:</label>
-          <input type="email" id="email" name="email" required>
+          <input type="email" id="email" name="email" required maxlength="120" autocomplete="email">
+          <p class="field-error" data-error-for="email" hidden></p>
 
-          <label for="phone">Phone Number:</label>
-          <input type="tel" id="phone" name="phone">
+          <label for="phone">Phone Number (optional):</label>
+          <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="0712 345 678">
+          <p class="field-error" data-error-for="phone" hidden></p>
 
           <label for="message">Your Inquiry:</label>
-          <textarea id="message" name="message" rows="5" required></textarea>
+          <textarea id="message" name="message" rows="5" required minlength="10" maxlength="2000"></textarea>
+          <p class="char-count" id="messageCount" aria-hidden="true"></p>
+          <p class="field-error" data-error-for="message" hidden></p>
 
-          <button type="submit" class="btn"><i class="fas fa-paper-plane"></i> Send Inquiry</button>
+          <!-- Honeypot: hidden from people (off-screen, skipped by Tab, ignored by screen readers).
+               Bots fill in every field they find, and give themselves away. -->
+          <div class="hp-field" aria-hidden="true">
+            <label for="website">Leave this field empty</label>
+            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+          </div>
+
+          <button type="submit" class="btn"><i class="fas fa-paper-plane" aria-hidden="true"></i> Send Inquiry</button>
         </form>
       </div>
 
@@ -78,5 +97,6 @@
   <script src="js/api.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/nav.js"></script>
+  <script src="contact.js"></script>
 </body>
 </html>

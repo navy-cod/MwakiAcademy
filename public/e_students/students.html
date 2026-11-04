@@ -24,15 +24,22 @@
                     <span class="stat-label">Average Grade</span>
                 </div>
             </div>
-            <button class="add-btn">
-                <span class="btn-icon">+</span> Add Student
-            </button>
+            <div class="header-actions">
+                <p class="header-user" id="headerUser" hidden>
+                    <span id="userName"></span>
+                    <button type="button" class="link-btn" id="logoutBtn">Sign out</button>
+                </p>
+                <!-- disabled until the page has confirmed that you are signed in -->
+                <button class="add-btn" id="addBtn" type="button" disabled>
+                    <span class="btn-icon">+</span> Add Student
+                </button>
+            </div>
         </header>
 
         <div class="controls-bar">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search by name, email or ID...">
-                <span class="search-icon">🔍</span>
+                <input type="search" id="searchInput" placeholder="Search by name, email or ID..." aria-label="Search students" maxlength="100" autocomplete="off">
+                <span class="search-icon" aria-hidden="true">🔍</span>
             </div>
             <div class="sort-box">
                 <label for="sortSelect">Sort by:</label>
@@ -51,112 +58,110 @@
             <!-- Student List Section -->
             <div class="student-list">
                 <div class="student-list-title">Student List</div>
-                <div class="student-list-items"></div>
+                <div class="student-list-items" id="studentList"></div>
+                <nav class="pagination" id="pagination" aria-label="Student list pages" hidden>
+                    <button type="button" class="page-btn" id="prevPage">&larr; Prev</button>
+                    <span id="pageInfo" aria-live="polite"></span>
+                    <button type="button" class="page-btn" id="nextPage">Next &rarr;</button>
+                </nav>
             </div>
 
             <!-- Student Detail Section -->
             <div class="student-detail">
                 <div class="student-detail-title">Student Information</div>
-                <div class="student-detail-info"></div>
+                <div class="student-detail-info" id="studentDetail" aria-live="polite"></div>
             </div>
         </div>
 
-        <!-- ADD STUDENT MODAL FORM -->
-        <div class="modal" id="addModal">
-            <form class="student-form" id="addForm">
-                <h2>➕ Add New Student</h2>
-                
+        <!-- ONE form for both "add" and "edit" (the title and the save button change) -->
+        <div class="modal" id="studentModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <form class="student-form" id="studentForm" method="post">
+                <h2 id="modalTitle">➕ Add New Student</h2>
+                <div class="form-alert" data-form-error role="alert" hidden></div>
+
                 <div class="form-row">
-                    <input type="text" name="firstName" placeholder="First Name" required>
-                    <input type="text" name="lastName" placeholder="Last Name" required>
+                    <div class="field">
+                        <label for="f-firstName">First name</label>
+                        <input type="text" id="f-firstName" name="firstName" required minlength="2" maxlength="50" autocomplete="off">
+                        <p class="field-error" data-error-for="firstName" hidden></p>
+                    </div>
+                    <div class="field">
+                        <label for="f-lastName">Last name</label>
+                        <input type="text" id="f-lastName" name="lastName" required minlength="2" maxlength="50" autocomplete="off">
+                        <p class="field-error" data-error-for="lastName" hidden></p>
+                    </div>
                 </div>
 
-                <input type="text" name="studentId" placeholder="Student ID (e.g., MU-2024-001)" required>
-                <input type="email" name="email" placeholder="Email Address" required>
-                
-                <div class="form-row">
-                    <input type="text" name="contactNumber" placeholder="Phone Number" required>
-                    <input type="number" name="grade" placeholder="Grade Percentage (0-100)" required step="0.01">
+                <div class="field">
+                    <label for="f-studentCode">Student ID</label>
+                    <input type="text" id="f-studentCode" name="studentCode" required placeholder="MU-2026-011"
+                           pattern="[Mm][Uu]-[0-9]{4}-[0-9]{3,4}" title="Looks like MU-2026-011" autocomplete="off">
+                    <p class="field-error" data-error-for="studentCode" hidden></p>
                 </div>
 
-                <select name="course" required>
-                    <option value="">Select Course</option>
-                    <option value="BSc Computer Science">BSc Computer Science</option>
-                    <option value="BSc Information Technology">BSc Information Technology</option>
-                    <option value="BBA Business Administration">BBA Business Administration</option>
-                    <option value="BEd Education">BEd Education</option>
-                    <option value="BA Literature">BA Literature</option>
-                    <option value="BSc Nursing">BSc Nursing</option>
-                    <option value="BSc Mathematics">BSc Mathematics</option>
-                </select>
+                <div class="field">
+                    <label for="f-email">Email address</label>
+                    <input type="email" id="f-email" name="email" required maxlength="120" autocomplete="off">
+                    <p class="field-error" data-error-for="email" hidden></p>
+                </div>
 
-                <input type="text" name="address" placeholder="Physical Address" required>
-                
                 <div class="form-row">
-                    <input type="date" name="dob" placeholder="Date of Birth" required>
-                    <input type="text" name="imageUrl" placeholder="Profile Image URL (optional)">
+                    <div class="field">
+                        <label for="f-phone">Phone number</label>
+                        <input type="tel" id="f-phone" name="phone" required placeholder="0712 345 678" autocomplete="off">
+                        <p class="field-error" data-error-for="phone" hidden></p>
+                    </div>
+                    <div class="field">
+                        <label for="f-grade">Grade (0-100 %)</label>
+                        <input type="number" id="f-grade" name="grade" required min="0" max="100" step="0.1">
+                        <p class="field-error" data-error-for="grade" hidden></p>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="f-programId">Course</label>
+                    <select id="f-programId" name="programId" required>
+                        <option value="">Select Course</option>
+                    </select>
+                    <p class="field-error" data-error-for="programId" hidden></p>
+                </div>
+
+                <div class="field">
+                    <label for="f-address">Physical address</label>
+                    <input type="text" id="f-address" name="address" required minlength="3" maxlength="200" autocomplete="off">
+                    <p class="field-error" data-error-for="address" hidden></p>
+                </div>
+
+                <div class="form-row">
+                    <div class="field">
+                        <label for="f-dob">Date of birth</label>
+                        <input type="date" id="f-dob" name="dob" required>
+                        <p class="field-error" data-error-for="dob" hidden></p>
+                    </div>
+                    <div class="field">
+                        <label for="f-imageUrl">Photo address (optional, https)</label>
+                        <input type="url" id="f-imageUrl" name="imageUrl" maxlength="300" placeholder="https://..." autocomplete="off">
+                        <p class="field-error" data-error-for="imageUrl" hidden></p>
+                    </div>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="student-form-submit">Save Student</button>
-                    <button type="button" class="cancel-btn">Cancel</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- EDIT STUDENT MODAL FORM -->
-        <div class="edit-modal" id="editModal">
-            <form class="edit-form" id="editForm">
-                <h2>✏️ Edit Student</h2>
-                
-                <input type="hidden" name="editId" id="editId">
-
-                <div class="form-row">
-                    <input type="text" name="editFirstName" id="editFirstName" placeholder="First Name" required>
-                    <input type="text" name="editLastName" id="editLastName" placeholder="Last Name" required>
-                </div>
-
-                <input type="text" name="editStudentId" id="editStudentId" placeholder="Student ID" required>
-                <input type="email" name="editEmail" id="editEmail" placeholder="Email Address" required>
-                
-                <div class="form-row">
-                    <input type="text" name="editContactNumber" id="editContactNumber" placeholder="Phone Number" required>
-                    <input type="number" name="editGrade" id="editGrade" placeholder="Grade Percentage (0-100)" required step="0.01">
-                </div>
-
-                <select name="editCourse" id="editCourse" required>
-                    <option value="">Select Course</option>
-                    <option value="BSc Computer Science">BSc Computer Science</option>
-                    <option value="BSc Information Technology">BSc Information Technology</option>
-                    <option value="BBA Business Administration">BBA Business Administration</option>
-                    <option value="BEd Education">BEd Education</option>
-                    <option value="BA Literature">BA Literature</option>
-                    <option value="BSc Nursing">BSc Nursing</option>
-                    <option value="BSc Mathematics">BSc Mathematics</option>
-                </select>
-
-                <input type="text" name="editAddress" id="editAddress" placeholder="Physical Address" required>
-                
-                <div class="form-row">
-                    <input type="date" name="editDob" id="editDob" placeholder="Date of Birth" required>
-                    <input type="text" name="editImageUrl" id="editImageUrl" placeholder="Profile Image URL (optional)">
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="student-form-submit">Update Student</button>
-                    <button type="button" class="cancel-btn edit-cancel">Cancel</button>
+                    <button type="submit" class="student-form-submit" id="saveBtn">Save Student</button>
+                    <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
                 </div>
             </form>
         </div>
 
         <!-- Toast Notifications Container -->
-        <div class="toast-container" id="toastContainer"></div>
+        <div class="toast-container" id="toastContainer" role="status" aria-live="polite"></div>
     </div>
 
+    <!-- Shared helpers first (paths are relative to THIS file, which lives in /e_students/) -->
+    <script src="../js/api.js"></script>
+    <script src="../js/ui.js"></script>
     <script src="students.js"></script>
-    <!-- Remove the home-link-container from header and add this at the bottom of body -->
-<a href="../home.html" class="home-link-floating" title="Back to Home">
-    <i class="fas fa-home"></i>
-</a>
+    <a href="../home.html" class="home-link-floating" title="Back to Home" aria-label="Back to Home">
+        <i class="fas fa-home" aria-hidden="true"></i>
+    </a>
 </body>
 </html>

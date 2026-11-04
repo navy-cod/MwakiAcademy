@@ -5,6 +5,7 @@ namespace Mwaki\Controllers;
 
 use Mwaki\Database;
 use Mwaki\Http;
+use Mwaki\Intakes;
 
 final class ProgramController
 {
@@ -25,22 +26,21 @@ final class ProgramController
 
         // The database uses snake_case column names; JavaScript convention is camelCase.
         // This is the place where we translate, so the front end never sees raw column names.
-        $programs = array_map(static fn(array $row): array => [
-            'id'                => (int) $row['id'],
-            'name'              => $row['name'],
-            'faculty'           => $row['faculty'],
-            'annualTuitionKes'  => $row['annual_tuition_kes'] === null ? null : (int) $row['annual_tuition_kes'],
-            'additionalFeesKes' => $row['additional_fees_kes'] === null ? null : (int) $row['additional_fees_kes'],
-            'minKcse'           => $row['min_kcse'],
-            'intakes'           => explode(',', $row['intakes']),
-        ], $rows);
+        $programs = array_map(static function (array $row): array {
+            $periods = explode(',', $row['intakes']);
+            return [
+                'id'                => (int) $row['id'],
+                'name'              => $row['name'],
+                'faculty'           => $row['faculty'],
+                'annualTuitionKes'  => $row['annual_tuition_kes'] === null ? null : (int) $row['annual_tuition_kes'],
+                'additionalFeesKes' => $row['additional_fees_kes'] === null ? null : (int) $row['additional_fees_kes'],
+                'minKcse'           => $row['min_kcse'],
+                'intakes'           => $periods,
+                // Phase 2: only intakes that have not started yet, calculated from today's date.
+                'upcomingIntakes'   => Intakes::upcoming($periods),
+            ];
+        }, $rows);
 
-        // Computed on the server so the list never goes stale (no hard-coded years in HTML).
-        $thisYear = (int) date('Y');
-
-        Http::json(200, [
-            'programs'    => $programs,
-            'intakeYears' => range($thisYear, $thisYear + 2),
-        ]);
+        Http::json(200, ['programs' => $programs]);
     }
 }

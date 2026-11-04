@@ -1449,3 +1449,176 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   .login-layout > .card { flex: none; width: 100%; }
   .contact-grid { grid-template-columns: 1fr; }
 }
+
+/* =====================================================================
+   PHASE 2 ADDITIONS  (admission, tracking, contact)
+   ===================================================================== */
+
+/* Success banners are hidden by the original stylesheet; scripts add .is-visible to show them. */
+.success-message.is-visible { display: block; }
+.success-message:focus { outline: 3px solid #fff; outline-offset: -6px; }
+
+/* <fieldset>/<legend> groups. The legend holds the same <h2> the form used before,
+   so the look is unchanged; we only remove the browser's default box. */
+.form-card fieldset { border: 0; margin: 0 0 1.5rem; padding: 0; min-width: 0; }
+.form-card legend { width: 100%; padding: 0; }
+.form-card legend h2 { margin-top: 0; }
+
+.field-label { font-weight: 600; color: #2e0b5e; display: block; margin-bottom: 0.3rem; }
+.field-hint {
+  background: #fff7e0;
+  border: 1px solid #f1d28a;
+  color: #7a4b00;
+  padding: 0.55rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  margin: -1.1rem 0 1rem;
+}
+.char-count { text-align: right; color: #4a2d6a; font-size: 0.85rem; margin: -1.1rem 0 1rem; }
+
+/* Honeypot: pushed off-screen rather than display:none, because some bots skip fields that are display:none. */
+.hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+/* Receipt and tracking */
+.stack-gap { margin-top: 2rem; }
+.receipt-card h2 { margin-bottom: 0.5rem; }
+.receipt-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.6rem 1.5rem;
+  margin: 1rem 0 1.25rem;
+}
+.receipt-list dt { font-weight: 600; color: #2e0b5e; }
+.receipt-list dd { margin: 0; overflow-wrap: anywhere; }
+.receipt-list .reference {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+}
+.receipt-note { color: #4a2d6a; font-size: 0.95rem; }
+
+.status-pill {
+  display: inline-block;
+  padding: 0.2rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: #e8e8f0;
+  color: #333;
+}
+.status-pill--pending  { background: #fff3cd; color: #7a5a00; }
+.status-pill--approved { background: #d6f5e3; color: #13663a; }
+.status-pill--rejected { background: #fde2e0; color: #8a1f17; }
+
+.status-result {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(180, 140, 255, 0.25);
+  border-radius: 16px;
+}
+.status-result p { margin: 0.35rem 0; }
+
+@media (max-width: 768px) {
+  .receipt-list { grid-template-columns: 1fr; gap: 0.1rem; }
+  .receipt-list dd { margin-bottom: 0.6rem; }
+}
+
+/* Printing / "Save as PDF" fallback: show ONLY the receipt. */
+@media print {
+  body * { visibility: hidden; }
+  #applicationSummary, #applicationSummary * { visibility: visible; }
+  #applicationSummary { position: absolute; left: 0; top: 0; width: 100%; }
+}
+
+/* =====================================================================
+   PHASE 3 ADDITIONS  (admin page)
+   ===================================================================== */
+
+/* Visible to screen readers, invisible on screen (for captions and labels that would be redundant visually). */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid rgba(106, 47, 167, 0.15);
+}
+.tab {
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 12px 12px 0 0;
+  padding: 0.75rem 1.25rem;
+  font: inherit;
+  font-weight: 600;
+  color: #4a2d6a;
+  cursor: pointer;
+}
+.tab:hover { background: rgba(106, 47, 167, 0.07); }
+.tab.is-active { color: var(--primary); border-bottom-color: var(--primary); }
+.tab-count {
+  display: inline-block;
+  min-width: 1.5rem;
+  padding: 0 0.45rem;
+  margin-left: 0.4rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1.5rem;
+  text-align: center;
+}
+.tab-count:empty { display: none; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.75rem; }
+.toolbar > div { flex: 1 1 220px; }
+.toolbar select, .toolbar input { margin-bottom: 0; }
+
+.admin-table td { vertical-align: top; }
+.admin-table .reference {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+}
+.btn-small { padding: 0.45rem 1rem; font-size: 0.85rem; margin: 0.15rem 0.25rem 0.15rem 0; }
+.row-actions { white-space: nowrap; }
+
+.applicant-details { margin-top: 0.5rem; font-size: 0.9rem; }
+.applicant-details summary { cursor: pointer; color: var(--primary); font-weight: 600; }
+.detail-list { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 1rem; margin: 0.6rem 0 0; }
+.detail-list dt { font-weight: 600; }
+.detail-list dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+
+.message-list { display: grid; gap: 1rem; }
+.message-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(180, 140, 255, 0.25);
+  border-radius: 18px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 8px 20px rgba(106, 47, 167, 0.08);
+}
+.message-card.is-handled { opacity: 0.75; }
+.message-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1rem; margin-bottom: 0.6rem; }
+.message-body { white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 1rem; }
+.empty-note { padding: 1.5rem; text-align: center; color: #4a2d6a; }
+
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1rem; }
+.pager-info { color: #4a2d6a; font-size: 0.95rem; text-align: center; }
+.pager .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+  .row-actions { white-space: normal; }
+  .detail-list { grid-template-columns: 1fr; }
+}

@@ -9,8 +9,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="admission.js"></script>
+  <!-- "defer": download while the page loads, run after it is parsed, so it never blocks rendering.
+       Only used when the applicant clicks "Download"; admission.js falls back to printing if it is missing. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 </head>
 <body class="no-sidebar">
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -34,117 +35,161 @@
   </header>
 
   <main class="main-wrapper" id="main">
-    <h1 class="page-title"><i class="fas fa-pen-to-square"></i> Admissions</h1>
+    <h1 class="page-title"><i class="fas fa-pen-to-square" aria-hidden="true"></i> Admissions</h1>
     <p class="page-subtitle">Please fill out the online application form below to apply for your preferred program.</p>
 
-    <div id="successMessage" class="success-message">
-      <i class="fas fa-check-circle"></i> Application submitted successfully! You can now download your application form.
+    <div id="successMessage" class="success-message" role="status" tabindex="-1">
+      <i class="fas fa-check-circle" aria-hidden="true"></i> <span id="successText"></span>
     </div>
 
-      <div class="download-section" id="pdfDownloadSection">
-        <button id="downloadPDFBtn" class="btn btn-outline"><i class="fas fa-file-pdf"></i> DownloadYour Application (PDF)</button>
+    <!-- Shown after a successful submission. Everything inside #applicationSummary is what ends up in the PDF. -->
+    <section class="card receipt-card" id="applicationReceipt" aria-labelledby="receiptTitle" hidden>
+      <div id="applicationSummary">
+        <h2 id="receiptTitle">Application received</h2>
+        <dl class="receipt-list" id="receiptList"></dl>
+        <p class="receipt-note">Keep your reference number safe. To check the progress of your application, use
+          &ldquo;Track your application&rdquo; on the Admissions page with this reference number and the email address you applied with.</p>
       </div>
+      <div class="download-section" id="pdfDownloadSection">
+        <button type="button" id="downloadPDFBtn" class="btn"><i class="fas fa-file-pdf" aria-hidden="true"></i> Download your application (PDF)</button>
+        <button type="button" id="newApplicationBtn" class="btn btn-outline"><i class="fas fa-plus" aria-hidden="true"></i> Start another application</button>
+      </div>
+    </section>
 
-    <div class="form-card">
-      <form id="admissionForm">
-        <h2>Personal Information</h2>
-        
-        <label for="fullname">Full Name:</label>
-        <input type="text" id="fullname" name="fullname" required>
+    <div class="form-card" id="applicationFormCard">
+      <noscript><p class="form-alert">JavaScript is required to submit the application form.</p></noscript>
 
-        <label for="email">Email Address:</label>
-        <input type="email" id="email" name="email" required>
+      <form id="admissionForm" method="post">
+        <div class="form-alert" data-form-error role="alert" hidden></div>
 
-        <label for="phone">Phone Number:</label>
-        <input type="tel" id="phone" name="phone" required>
+        <!-- A <fieldset> groups related controls; its <legend> names the group for screen readers. -->
+        <fieldset>
+          <legend><h2>Personal Information</h2></legend>
 
-        <label>Gender:</label>
-        <div class="radio-group">
-          <input type="radio" name="gender" id="male" value="Male">
-          <label for="male">Male</label>
-          <input type="radio" name="gender" id="female" value="Female">
-          <label for="female">Female</label>
-        </div>
+          <label for="fullname">Full Name:</label>
+          <input type="text" id="fullname" name="fullName" required minlength="3" maxlength="100" autocomplete="name">
+          <p class="field-error" data-error-for="fullName" hidden></p>
 
-        <label for="dob">Date of Birth:</label>
-        <input type="date" id="dob" name="dob" required>
+          <label for="email">Email Address:</label>
+          <input type="email" id="email" name="email" required maxlength="120" autocomplete="email">
+          <p class="field-error" data-error-for="email" hidden></p>
 
-        <label for="address">Physical Address:</label>
-        <input type="text" id="address" name="address" required>
+          <label for="phone">Phone Number:</label>
+          <input type="tel" id="phone" name="phone" required placeholder="0712 345 678" autocomplete="tel">
+          <p class="field-error" data-error-for="phone" hidden></p>
 
-        <h2>Academic Information</h2>
-        
-        <label for="program">Choose Program:</label>
-        <select id="program" name="program" required>
-          <option value="">--Select Program--</option>
-          <option value="BSc Computer Science">BSc Computer Science</option>
-          <option value="BSc Information Technology">BSc Information Technology</option>
-          <option value="BBA Business Administration">BBA Business Administration</option>
-          <option value="BEd Education">BEd Education</option>
-          <option value="BA Literature">BA Literature</option>
-          <option value="BSc Nursing">BSc Nursing</option>
-          <option value="BSc Mathematics">BSc Mathematics</option>
-        </select>
+          <span class="field-label" id="genderLabel">Gender (optional):</span>
+          <div class="radio-group" role="radiogroup" aria-labelledby="genderLabel">
+            <input type="radio" name="gender" id="male" value="Male">
+            <label for="male">Male</label>
+            <input type="radio" name="gender" id="female" value="Female">
+            <label for="female">Female</label>
+          </div>
+          <p class="field-error" data-error-for="gender" hidden></p>
 
-        <label for="kcseGrade">KCSE Mean Grade:</label>
-        <select id="kcseGrade" name="kcseGrade" required>
-          <option value="">--Select Grade--</option>
-          <option value="A">A (80+ points)</option>
-          <option value="A-">A- (75-79 points)</option>
-          <option value="B+">B+ (70-74 points)</option>
-          <option value="B">B (65-69 points)</option>
-          <option value="B-">B- (60-64 points)</option>
-          <option value="C+">C+ (55-59 points)</option>
-          <option value="C">C (50-54 points)</option>
-          <option value="C-">C- (45-49 points)</option>
-        </select>
+          <label for="dob">Date of Birth:</label>
+          <input type="date" id="dob" name="dob" required autocomplete="bday">
+          <p class="field-error" data-error-for="dob" hidden></p>
 
-        <h2>Intake Information</h2>
-        
-        <label for="intake">Select Intake Year:</label>
-        <select id="intake" name="intake" required>
-          <option value="">--Select Year--</option>
-          <option value="2026">2026</option>
-          <option value="2027">2027</option>
-          <option value="2028">2028</option>
-        </select>
+          <label for="address">Physical Address:</label>
+          <input type="text" id="address" name="address" required minlength="3" maxlength="200" autocomplete="street-address">
+          <p class="field-error" data-error-for="address" hidden></p>
+        </fieldset>
 
-        <label for="intakePeriod">Intake Period:</label>
-        <select id="intakePeriod" name="intakePeriod" required>
-          <option value="">--Select Period--</option>
-          <option value="September">September Intake</option>
-          <option value="January">January Intake</option>
-          <option value="May">May Intake</option>
-        </select>
+        <fieldset>
+          <legend><h2>Academic Information</h2></legend>
 
-        <h2>Additional Information</h2>
-        
-        <label for="message">Why do you want to join Mwaki University?</label>
-        <textarea id="message" name="message" rows="4" required></textarea>
+          <label for="program">Choose Program:</label>
+          <select id="program" name="programId" required>
+            <option value="">--Select Program--</option>
+          </select>
+          <p class="field-error" data-error-for="programId" hidden></p>
 
-        <label for="howHeard">How did you hear about us?</label>
-        <select id="howHeard" name="howHeard" required>
-          <option value="">--Select--</option>
-          <option value="Social Media">Social Media</option>
-          <option value="Friend/Family">Friend/Family</option>
-          <option value="School Visit">School Visit</option>
-          <option value="Radio/TV">Radio/TV</option>
-          <option value="Online Ad">Online Advertisement</option>
-          <option value="Other">Other</option>
-        </select>
+          <label for="kcseGrade">KCSE Mean Grade:</label>
+          <select id="kcseGrade" name="kcseGrade" required>
+            <option value="">--Select Grade--</option>
+            <option value="A">A (80+ points)</option>
+            <option value="A-">A- (75-79 points)</option>
+            <option value="B+">B+ (70-74 points)</option>
+            <option value="B">B (65-69 points)</option>
+            <option value="B-">B- (60-64 points)</option>
+            <option value="C+">C+ (55-59 points)</option>
+            <option value="C">C (50-54 points)</option>
+            <option value="C-">C- (45-49 points)</option>
+          </select>
+          <p class="field-hint" id="kcseHint" hidden></p>
+          <p class="field-error" data-error-for="kcseGrade" hidden></p>
+        </fieldset>
+
+        <fieldset>
+          <legend><h2>Intake Information</h2></legend>
+
+          <label for="intake">Select Intake Year:</label>
+          <select id="intake" name="intakeYear" required>
+            <option value="">--Select Year--</option>
+          </select>
+          <p class="field-error" data-error-for="intakeYear" hidden></p>
+
+          <label for="intakePeriod">Intake Period:</label>
+          <select id="intakePeriod" name="intakePeriod" required>
+            <option value="">--Select Period--</option>
+          </select>
+          <p class="field-hint" id="intakeHint" hidden></p>
+          <p class="field-error" data-error-for="intakePeriod" hidden></p>
+        </fieldset>
+
+        <fieldset>
+          <legend><h2>Additional Information</h2></legend>
+
+          <label for="message">Why do you want to join Mwaki University?</label>
+          <textarea id="message" name="motivation" rows="4" required minlength="20" maxlength="1000"></textarea>
+          <p class="char-count" id="messageCount" aria-hidden="true"></p>
+          <p class="field-error" data-error-for="motivation" hidden></p>
+
+          <label for="howHeard">How did you hear about us?</label>
+          <select id="howHeard" name="howHeard" required>
+            <option value="">--Select--</option>
+            <option value="Social Media">Social Media</option>
+            <option value="Friend/Family">Friend/Family</option>
+            <option value="School Visit">School Visit</option>
+            <option value="Radio/TV">Radio/TV</option>
+            <option value="Online Ad">Online Advertisement</option>
+            <option value="Other">Other</option>
+          </select>
+          <p class="field-error" data-error-for="howHeard" hidden></p>
+        </fieldset>
 
         <div class="submit-container">
-          <button type="submit" class="btn"><i class="fas fa-paper-plane"></i> Submit Application</button>
+          <button type="submit" class="btn"><i class="fas fa-paper-plane" aria-hidden="true"></i> Submit Application</button>
         </div>
       </form>
-
-      <div id="pdfDownloadContainer" style="display: none;">
-        <button id="downloadPDF" class="pdf-download-btn"><i class="fas fa-file-pdf"></i> Download Application as PDF</button>
-      </div>
     </div>
+
+    <!-- Application tracking. The id lets other pages link straight here: admission.html#track -->
+    <section class="form-card stack-gap" id="track" aria-labelledby="trackTitle">
+      <h2 id="trackTitle">Track your application</h2>
+      <p>Already applied? Enter the reference number you were given and the email address you used.</p>
+      <form id="trackForm" method="get">
+        <div class="form-alert" data-form-error role="alert" hidden></div>
+
+        <label for="trackRef">Reference number:</label>
+        <input type="text" id="trackRef" name="ref" required maxlength="20" placeholder="MU-2027-ABC123"
+               autocomplete="off" autocapitalize="characters" spellcheck="false">
+        <p class="field-error" data-error-for="ref" hidden></p>
+
+        <label for="trackEmail">Email address:</label>
+        <input type="email" id="trackEmail" name="email" required maxlength="120" autocomplete="email">
+        <p class="field-error" data-error-for="email" hidden></p>
+
+        <button type="submit" class="btn"><i class="fas fa-magnifying-glass" aria-hidden="true"></i> Check status</button>
+      </form>
+      <div class="status-result" id="trackResult" role="status" aria-live="polite" hidden></div>
+    </section>
   </main>
+
   <script src="js/api.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/nav.js"></script>
+  <script src="admission.js"></script>
 </body>
 </html>

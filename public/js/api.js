@@ -40,11 +40,13 @@
    * function until the promise settles, while the rest of the page keeps running.
    * `async` marks a function that uses await; it always returns a promise itself.
    */
-  async function request(method, path, body, isRetry = false) {
+  async function request(method, path, body, options = {}) {
+    const { signal, isRetry = false } = options;
     const headers = { Accept: 'application/json' };
     const init = {
       method,
       headers,
+      signal,                       // lets the caller cancel this request (see AbortController in students.js)
       credentials: 'same-origin',   // send our session cookie (same-origin only)
     };
 
@@ -61,6 +63,8 @@
     try {
       response = await fetch(path, init);
     } catch (networkError) {
+      // A request the CALLER cancelled is not a failure: pass it up unchanged so the caller can ignore it.
+      if (networkError.name === 'AbortError') throw networkError;
       // fetch() only REJECTS when the request could not be made at all (offline, server down).
       // An HTTP error such as 404 or 500 is a normal response and does not throw.
       throw new ApiError(0, 'Cannot reach the server. Check your connection and try again.');
@@ -77,7 +81,7 @@
       if (response.status === 403 && data && data.code === 'csrf' && !isRetry) {
         csrfToken = null;
         await fetchSession(true);
-        return request(method, path, body, true);
+        return request(method, path, body, { signal, isRetry: true });
       }
       throw new ApiError(
         response.status,
@@ -129,7 +133,7 @@
   // The public face of this file. Everything above stays private inside the function.
   window.MwakiApi = {
     ApiError,
-    get:    (path, params) => request('GET', withQuery(path, params)),
+    get:    (path, params, options) => request('GET', withQuery(path, params), undefined, options),
     post:   (path, body)   => request('POST', path, body ?? {}),
     put:    (path, body)   => request('PUT', path, body ?? {}),
     patch:  (path, body)   => request('PATCH', path, body ?? {}),
