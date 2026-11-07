@@ -147,3 +147,32 @@ Every concept below is also explained in a comment *at the place it first appear
     `tests/api-smoke.sh` sends real HTTP requests and compares answers. A test suite that never fails proves nothing,
     so while building this project deliberate bugs were planted ("mutants") to confirm the tests catch each one.
     `tests/browser/` drives the real page scripts in jsdom. Neither replaces looking at the page in a real browser.
+
+## F. Admin tools: changing data that other data depends on
+
+32. **Referential integrity** - `ProgramController::destroy`, `database/schema.sql`
+    Students and applications point at a program by id (a FOREIGN KEY). Deleting the program would leave them pointing at
+    nothing, so the database refuses (`ON DELETE RESTRICT`). We check first so we can explain *why* ("used by 2 students"),
+    and keep the database rule as the safety net behind the check. Result: history stays intact, so a used program can only be edited.
+
+33. **One source of truth, many views** - `GET /api/programs`
+    Adding a program in one place updates the admission form, the tuition table and the student form with no further work,
+    because all three read the same list. (The static `faculties.html` does not, which is a good illustration of the cost of copies.)
+
+34. **Invariants: rules that must always hold** - `UserController`
+    "There is always at least one admin." Rather than counting admins on every request, the design makes it impossible to break:
+    only an admin can act, and an admin cannot delete, demote or reset *themselves*, so the actor always remains. Prefer a
+    design that cannot go wrong over a check that must be remembered.
+
+35. **Changing a password safely** - `Auth::changePassword`, `AuthController::password`
+    Ask for the *current* password (an open session may be stolen or left on a shared computer); store only the new hash;
+    start a fresh session id and CSRF token afterwards; count wrong guesses in their *own* bucket so guessing here cannot lock the
+    owner out of signing in; use 422 not 401 for a wrong current password, because 401 means "your session ended".
+
+36. **Partial updates with COALESCE** - `UserController::update`
+    `SET role = COALESCE(?, role)` means "use the new value if one was sent, otherwise keep what is there", so one PATCH can change
+    the role, the password, or both, without a separate query for each case.
+
+37. **Recovery paths and trust** - `database/set-password.php`
+    A tool that bypasses the login must only be reachable by someone who already controls the server. A command-line script that refuses to run
+    under a web server is exactly that: anyone who can run it could equally read the database file. It also clears the throttle lock-out.

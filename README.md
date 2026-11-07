@@ -13,6 +13,8 @@ itself explains each concept in comments where it first appears.
 | Staff sign-in, account page and statistics | `login.html`, `details.html` |
 | Student manager (search, sort, pages, add, edit, delete) | `e_students/students.html` |
 | Staff admin: review applications, handle messages | `admin.html` |
+| **Admin only:** add / edit / delete programs, manage staff accounts | `admin.html` (Programs and Accounts tabs) |
+| Change your own password | `details.html` |
 
 ## 1. Requirements
 
@@ -35,7 +37,18 @@ php -S localhost:8000 -t public router.php
 ```
 
 Open <http://localhost:8000>. Sign in at `/login.html` as `admin` or `staff` with the printed passwords.
-Upgrading from Phase 2? Replace the files, keep `storage/mwaki.sqlite` and `public/multimedia/`. **No database change.**
+Upgrading from an earlier delivery? Replace the files, keep `storage/mwaki.sqlite` and `public/multimedia/`. **No database change.**
+
+**Lost the admin password?** The seed script prints passwords only once and will not print them again. Reset one from the command line
+(only someone who can run commands on the server can do this):
+
+```bash
+php database/set-password.php admin                 # prints a new random password once
+MWAKI_NEW_PASSWORD='a long password' php database/set-password.php admin     # or choose your own (12+ characters)
+php database/set-password.php jane staff            # creates the account "jane" if it does not exist
+```
+
+Once you are signed in as an admin, use the **Accounts** tab on the Admin page to add people and reset their passwords.
 
 ## 3. Who can do what
 
@@ -47,9 +60,12 @@ Upgrading from Phase 2? Replace the files, keep `storage/mwaki.sqlite` and `publ
 | List / search / add / edit students | | yes | yes |
 | Review applications, handle messages | | yes | yes |
 | **Delete a student** | | | **yes** |
+| Change your own password | | yes | yes |
+| **Add / edit / delete programs** | | | **yes** |
+| **Add accounts, change roles, reset passwords, delete accounts** | | | **yes** |
 
 These rules are enforced by the **server** on every request. Hiding a button is only a courtesy.
-There is no in-app user management: the two accounts come from `database/seed.php` (see Known limits).
+The first two accounts come from `database/seed.php`; after that admins manage accounts on the Admin page.
 
 ## 4. API reference
 
@@ -59,7 +75,15 @@ All bodies are JSON. Every request that changes data (POST/PUT/PATCH/DELETE) nee
 |---|---|---|
 | `GET /api/session` | anyone | the signed-in user (or null) and the CSRF token |
 | `POST /api/auth/login`, `POST /api/auth/logout` | anyone | sign in / out (5 failed tries per 15 min are throttled) |
+| `POST /api/auth/password` | signed in | `{"currentPassword","newPassword"}` change your own password |
 | `GET /api/programs` | anyone | programs with fees, minimum KCSE grade and **upcoming** intakes |
+| `POST /api/programs` | **admin only** | add a program (201) |
+| `PUT /api/programs/{id}` | **admin only** | replace a program's details |
+| `DELETE /api/programs/{id}` | **admin only** | delete (204); refused with 409 if any student or application uses it |
+| `GET /api/users` | **admin only** | list accounts (never includes password hashes) |
+| `POST /api/users` | **admin only** | `{"username","role","password"}` create an account (201) |
+| `PATCH /api/users/{id}` | **admin only** | `{"role"}` and/or `{"password"}` for ANOTHER account |
+| `DELETE /api/users/{id}` | **admin only** | delete another account (204) |
 | `GET /api/stats` | staff | counts and averages for the Account page |
 | `POST /api/applications` | anyone | submit an application (201 + reference number) |
 | `GET /api/applications/status?ref=&email=` | anyone with both | status of one application |
@@ -85,12 +109,12 @@ config/config.php      every setting in one place
 src/                   PHP classes (private: NOT inside the web root)
   bootstrap.php, Http.php, HttpException.php, Router.php, Database.php, Validator.php, Auth.php
   Intakes.php, InquiryService.php
-  Controllers/         Auth, Program, Stats, Application, Inquiry, Student, Admin
-database/              schema.sql, seed.php, students.json (seed data; no longer public)
+  Controllers/         Auth, Program, Stats, Application, Inquiry, Student, Admin, User
+database/              schema.sql, seed.php, set-password.php (recovery tool), students.json (seed data; not public)
 storage/               mwaki.sqlite appears here (private)
 docs/CONCEPTS.md       guided tour of the ideas in the code
-tests/api-smoke.sh     188 automated back-end checks (needs only bash, curl, php)
-tests/browser/         OPTIONAL 180 front-end behaviour checks (needs Node)
+tests/api-smoke.sh     288 automated back-end checks (needs only bash, curl, php)
+tests/browser/         OPTIONAL 230 front-end behaviour checks (needs Node)
 public/                the web root: everything the browser may request
   api/index.php        front controller for /api/*
   submit_inquiry.php   no-JavaScript contact form handler
@@ -111,6 +135,9 @@ public/                the web root: everything the browser may request
 * **`admission.html` / `admission.js`:** rebuilt on the API (the JS file was empty). **`contact.html`:** form upgraded; `submit_inquiry.php` written.
 * **`e_students/students.html` / `.js`:** rewritten on the API. Your look (`students.css`) is kept; a block was appended.
   The data now **persists**, requires sign-in, searches/sorts/pages on the server, and no longer uses `innerHTML` or inline handlers.
+* **Added after review (programs and accounts):** programs can now be added, edited and deleted by admins, and staff accounts can be
+  managed in the app (they could previously only be changed with the seed script and by hand). Everyone can change their own password, and
+  `database/set-password.php` recovers a lost password. No database tables changed.
 * **Left untouched on purpose:** the 2010 vs 1978 founding-year contradiction between `about.html` and `history.html`, the marquee
   text, the dated news items, the demo table on the login page, `faculties.html` copy, and the KCSE option labels. Those are content decisions for you.
 
@@ -129,7 +156,7 @@ To start over: stop the server, delete that file, run `php database/seed.php`.
 ## 8. Testing
 
 ```bash
-bash tests/api-smoke.sh              # back end: expect "Result: 188 passed, 0 failed"
+bash tests/api-smoke.sh              # back end: expect "Result: 288 passed, 0 failed"
 bash tests/browser/run.sh            # OPTIONAL front end (Node 18+): expect "All browser suites passed."
 ```
 
@@ -179,7 +206,19 @@ Server running. Tick each box.
 - [ ] After submitting a few applications and messages: the tabs show counts; Approve/Reject change a row's status and the totals.
 - [ ] The applicant's tracking page now shows the new status. Messages can be marked handled and moved between the *New* and *Handled* lists. Arrow keys move between the two tabs.
 
-**9. Security spot checks**
+**9. Programs (admin)**
+- [ ] As `staff`, the Admin page shows only **Applications** and **Messages**. As `admin` it also shows **Programs** and **Accounts**.
+- [ ] Programs tab > *Add program* (leave one fee box empty: you are told to fill both or neither). A correct program appears at once on `tuition.html`, the admission form and the student form.
+- [ ] *Edit* it (boxes are pre-filled). *Delete* *BSc Nursing*: refused, with the number of students using it. Delete a program nobody uses: it disappears.
+- [ ] A program someone has applied to can never be deleted (history stays intact), only edited.
+
+**10. Accounts and passwords**
+- [ ] Accounts tab: your own row says "(you)" and has no Delete / role buttons. *Add account*: a new person can sign in straight away.
+- [ ] *Reset password* for them: their old password stops working and the new one works. *Make admin* / *Make staff* changes the badge. *Delete* removes the account and they can no longer sign in.
+- [ ] Account page > *Change my password*: a wrong current password is refused; a mismatched repeat is caught before anything is sent; a correct change keeps you signed in.
+- [ ] Lost password: run `php database/set-password.php admin`, then sign in with the printed password.
+
+**11. Security spot checks**
 - [ ] Visit `/src/bootstrap.php`, `/config/config.php`, `/database/students.json`, `/storage/mwaki.sqlite`: all 404.
 - [ ] Add a student whose first name is `<b>Bold</b>`: it appears as literal text, not bold.
 
@@ -190,8 +229,10 @@ Server running. Tick each box.
 * **Duplicate applications** are blocked by a check inside a transaction, not by a database rule; two submissions in the same
   instant could both succeed. A UNIQUE index would fix it (a schema change, not applied without your approval).
 * **Contact throttle** is per email and in total (no IP column). A `ip` column would improve it (also a schema change).
-* **No user management or password change** in the app: accounts exist only from the seed script. If a password is lost, delete
-  `storage/mwaki.sqlite` and re-seed (this erases all data), or change the hash by hand in the `users` table.
+* **Sessions after a reset:** when an admin resets someone's password, any session that person already has open stays valid until it times out
+  (30 minutes idle). Deleting an account, by contrast, stops its sessions at once. Revoking sessions instantly would need a sessions table.
+* **Programs in use cannot be deleted** (students and applications point at them). There is no "archive/hide" option, which would need a new
+  database column (a schema change, not applied without your approval). `faculties.html` is a plain page and is not updated automatically.
 * **Lost updates:** if two staff edit the same student at once, the last save wins (no version check).
 * **Audit trail** is a line in the server log, not a table. **No emails** are sent anywhere.
 * **Approving an application does not create a student.** **Reference lookups** are not rate-limited.
@@ -209,6 +250,6 @@ Server running. Tick each box.
 
 1. Add a `UNIQUE` index to stop duplicate applications, and an `ip` column to throttle the contact form.
 2. Turn an approved application into a student with one click (a transaction across two tables).
-3. Add a "change password" page and a user-management screen for admins.
+3. Add a session table so an admin can sign a person out everywhere, and a "forgot password" flow that needs e-mail.
 4. Add a `version` column and reject an update if someone else saved first (optimistic locking, HTTP 409/412).
 5. Write a new smoke test, then break the code on purpose and watch it fail.

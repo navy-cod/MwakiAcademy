@@ -45,6 +45,33 @@ final class AuthController
         Http::json(200, ['user' => $user, 'csrfToken' => Auth::csrfToken()]);
     }
 
+    /** POST /api/auth/password  body: {"currentPassword": "...", "newPassword": "..."}  (any signed-in user) */
+    public static function password(array $params): void
+    {
+        $user = Auth::requireUser();
+        [$clean, $errors] = Validator::check(Http::readJson(), [
+            // 'raw' = never trim: a password with a trailing space is a different password.
+            'currentPassword' => ['required', 'string', 'raw', 'maxlen:200'],
+            'newPassword'     => ['required', 'string', 'raw', 'minlen:12', 'maxlen:200'],
+        ], ['currentPassword' => 'Your current password', 'newPassword' => 'The new password']);
+
+        if (!isset($errors['newPassword'])) {
+            if ($clean['newPassword'] === $clean['currentPassword']) {
+                $errors['newPassword'] = 'The new password must be different from the current one.';
+            } elseif (strcasecmp($clean['newPassword'], $user['username']) === 0) {
+                $errors['newPassword'] = 'The password must not be your username.';
+            }
+        }
+        if ($errors !== []) {
+            throw new HttpException(422, 'Please correct the highlighted fields.', $errors);
+        }
+
+        Auth::changePassword($user, $clean['currentPassword'], $clean['newPassword']);
+
+        // The session was regenerated, so the browser needs the NEW CSRF token.
+        Http::json(200, ['ok' => true, 'csrfToken' => Auth::csrfToken()]);
+    }
+
     /** POST /api/auth/logout */
     public static function logout(array $params): void
     {

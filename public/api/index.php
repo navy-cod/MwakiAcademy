@@ -17,6 +17,7 @@ use Mwaki\Controllers\AuthController;
 use Mwaki\Controllers\InquiryController;
 use Mwaki\Controllers\ProgramController;
 use Mwaki\Controllers\StudentController;
+use Mwaki\Controllers\UserController;
 use Mwaki\Controllers\StatsController;
 use Mwaki\Http;
 use Mwaki\Router;
@@ -47,6 +48,7 @@ $router->add('GET',  '/api/session',     [AuthController::class,    'session']);
 $router->add('POST', '/api/auth/login',  [AuthController::class,    'login']);
 $router->add('POST', '/api/auth/logout', [AuthController::class,    'logout']);
 $router->add('GET',  '/api/programs',    [ProgramController::class, 'index']);
+$router->add('POST', '/api/auth/password', [AuthController::class,    'password']);
 $router->add('GET',  '/api/stats',       [StatsController::class,   'index']);
 
 // Public forms (no sign-in needed) ...
@@ -66,5 +68,14 @@ $router->add('GET',    '/api/applications',      [AdminController::class, 'appli
 $router->add('PATCH',  '/api/applications/{id}', [AdminController::class, 'updateApplication']);
 $router->add('GET',    '/api/inquiries',         [AdminController::class, 'inquiries']);
 $router->add('PATCH',  '/api/inquiries/{id}',    [AdminController::class, 'updateInquiry']);
+
+// Admin-only management. Each method starts with Auth::requireUser('admin'): staff get 403.
+$router->add('POST',   '/api/programs',          [ProgramController::class, 'create']);
+$router->add('PUT',    '/api/programs/{id}',     [ProgramController::class, 'update']);
+$router->add('DELETE', '/api/programs/{id}',     [ProgramController::class, 'destroy']);
+$router->add('GET',    '/api/users',             [UserController::class,    'index']);
+$router->add('POST',   '/api/users',             [UserController::class,    'create']);
+$router->add('PATCH',  '/api/users/{id}',        [UserController::class,    'update']);
+$router->add('DELETE', '/api/users/{id}',        [UserController::class,    'destroy']);
 
 $router->dispatch($method, Http::path());

@@ -1,6 +1,7 @@
 /*
  * admin.js  -  staff page: review admission applications and handle contact messages.
  *
+ * Applications and Messages are for staff and admins. Programs and Accounts are for ADMINS only.
  * This page only DISPLAYS what the server sends and asks the server to change things.
  * Who may do what is decided by src/Controllers/AdminController.php; hiding or showing a button
  * here is a convenience, never the protection.
@@ -8,7 +9,7 @@
 (function () {
   'use strict';
 
-  const { h, debounce, toast, formatDate } = MwakiUi;
+  const { h, debounce, toast, formatDate, formatKes, clearFieldErrors, showFieldErrors, showFormError, setBusy } = MwakiUi;
   const $ = (id) => document.getElementById(id);
 
   const state = {
@@ -182,9 +183,231 @@
   $('msgFilter').addEventListener('change', () => { state.msgs.handled = $('msgFilter').value; state.msgs.page = 1; loadMessages(); });
   wirePager($('msgPager'), () => state.msgs.page, (n) => { state.msgs.page = n; }, loadMessages);
 
+  // ------------------------------------------------------------------ programs (admins only)
+
+  const programForm = $('programForm');
+  let editingProgramId = null;          // null = the form is adding; a number = it is editing that program
+  let programsById = new Map();
+
+  function programRow(p) {
+    const money = p.annualTuitionKes === null
+      ? 'Not published'
+      : `${formatKes(p.annualTuitionKes)} + ${formatKes(p.additionalFeesKes)}`;
+    return h('tr', { 'data-id': p.id },
+      h('td', null, h('strong', null, p.name)),
+      h('td', null, p.faculty),
+      h('td', null, money),
+      h('td', null, p.minKcse),
+      h('td', null, p.intakes.join(', ')),
+      h('td', { class: 'row-actions' },
+        h('button', { type: 'button', class: 'btn btn-outline btn-small', 'data-action': 'edit', 'aria-label': `Edit ${p.name}` }, 'Edit'),
+        h('button', { type: 'button', class: 'btn btn-outline btn-small', 'data-action': 'delete', 'aria-label': `Delete ${p.name}` }, 'Delete')));
+  }
+
+  async function loadPrograms() {
+    try {
+      const { programs } = await MwakiApi.get('/api/programs');
+      programsById = new Map(programs.map((p) => [p.id, p]));
+      $('programRows').replaceChildren(...programs.map(programRow));
+      $('programSummary').textContent = `${programs.length} programs`;
+      // Suggest the existing faculty names while typing a new one (a <datalist> is an HTML autocomplete list).
+      const faculties = [...new Set(programs.map((p) => p.faculty))].sort();
+      $('facultyList').replaceChildren(...faculties.map((name) => h('option', { value: name })));
+    } catch (error) {
+      fail(error);
+    }
+  }
+
+  function openProgramForm(program) {
+    clearFieldErrors(programForm);
+    programForm.reset();
+    editingProgramId = program ? program.id : null;
+    $('programFormTitle').textContent = program ? `Edit ${program.name}` : 'Add program';
+    $('programSaveBtn').textContent = program ? 'Save changes' : 'Add program';
+    if (program) {
+      const f = programForm.elements;
+      f.name.value = program.name;
+      f.faculty.value = program.faculty;
+      f.annualTuitionKes.value = program.annualTuitionKes ?? '';      // ?? means "if null, use ''"
+      f.additionalFeesKes.value = program.additionalFeesKes ?? '';
+      f.minKcse.value = program.minKcse;
+      programForm.querySelectorAll('input[name="intakes"]').forEach((box) => { box.checked = program.intakes.includes(box.value); });
+    }
+    $('programFormCard').hidden = false;
+    programForm.elements.name.focus();
+    $('programFormCard').scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }
+  const closeProgramForm = () => { $('programFormCard').hidden = true; clearFieldErrors(programForm); };
+
+  $('addProgramBtn').addEventListener('click', () => openProgramForm(null));
+  $('programCancelBtn').addEventListener('click', closeProgramForm);
+
+  programForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearFieldErrors(programForm);
+    const f = programForm.elements;
+    const numberOrNull = (text) => (text.trim() === '' ? null : Number(text));
+    const payload = {
+      name: f.name.value,
+      faculty: f.faculty.value,
+      annualTuitionKes: numberOrNull(f.annualTuitionKes.value),
+      additionalFeesKes: numberOrNull(f.additionalFeesKes.value),
+      minKcse: f.minKcse.value === '' ? null : f.minKcse.value,
+      // The checked boxes become a real JSON list: ["January", "September"].
+      intakes: [...programForm.querySelectorAll('input[name="intakes"]:checked')].map((box) => box.value),
+    };
+
+    const editing = editingProgramId !== null;
+    setBusy($('programSaveBtn'), true, 'Saving…');
+    try {
+      const { program } = editing
+        ? await MwakiApi.put(`/api/programs/${editingProgramId}`, payload)
+        : await MwakiApi.post('/api/programs', payload);
+      closeProgramForm();
+      toast(editing ? `${program.name} updated.` : `${program.name} added. It is already on the admission form and tuition page.`, 'success');
+      await loadPrograms();
+    } catch (error) {
+      if (!(error instanceof MwakiApi.ApiError)) { fail(error); return; }
+      if (error.status === 401) { fail(error); return; }
+      // 422 (invalid) and 409 (name taken) both carry per-field messages.
+      const hasFieldErrors = Object.keys(error.errors).length > 0;
+      if (!(hasFieldErrors && showFieldErrors(programForm, error.errors))) showFormError(programForm, error.message);
+    } finally {
+      setBusy($('programSaveBtn'), false);
+    }
+  });
+
+  $('programRows').addEventListener('click', async (event) => {
+    const button = event.target.closest('button[data-action]');
+    if (!button) return;
+    const program = programsById.get(Number(button.closest('tr').dataset.id));
+    if (!program) return;
+
+    if (button.dataset.action === 'edit') {
+      openProgramForm(program);
+      return;
+    }
+    if (!window.confirm(`Delete the program "${program.name}"? This cannot be undone.`)) return;
+    try {
+      await MwakiApi.delete(`/api/programs/${program.id}`);
+      toast(`${program.name} deleted.`, 'success');
+    } catch (error) {
+      // 409 in_use: the message already explains which students/applications still use it.
+      if (error instanceof MwakiApi.ApiError && error.status !== 401) toast(error.message, 'error', 8000);
+      else fail(error);
+    }
+    loadPrograms();
+  });
+
+  // ------------------------------------------------------------------ accounts (admins only)
+
+  const accountForm = $('accountForm');
+  let resetTarget = null;               // null = the form creates an account; an object = it resets that person's password
+
+  function accountRow(u) {
+    const other = u.role === 'admin' ? 'staff' : 'admin';
+    return h('tr', { 'data-id': u.id, 'data-username': u.username },
+      h('td', null, h('strong', null, u.username), u.isYou ? h('span', { class: 'you-tag' }, ' (you)') : null),
+      h('td', null, h('span', { class: `badge badge--${u.role}` }, u.role)),
+      h('td', null, formatDate(u.createdAt)),
+      h('td', { class: 'row-actions' }, u.isYou
+        // The server also refuses these on your own account; we just do not offer them.
+        ? h('span', { class: 'muted' }, 'Use "Change my password" on your Account page')
+        : [
+            h('button', { type: 'button', class: 'btn btn-outline btn-small', 'data-action': 'toggle-role', 'data-role': other, 'aria-label': `Make ${u.username} ${other}` }, `Make ${other}`),
+            h('button', { type: 'button', class: 'btn btn-outline btn-small', 'data-action': 'reset', 'aria-label': `Reset password for ${u.username}` }, 'Reset password'),
+            h('button', { type: 'button', class: 'btn btn-outline btn-small', 'data-action': 'delete', 'aria-label': `Delete account ${u.username}` }, 'Delete'),
+          ]));
+  }
+
+  async function loadAccounts() {
+    try {
+      const { users } = await MwakiApi.get('/api/users');
+      $('accountRows').replaceChildren(...users.map(accountRow));
+    } catch (error) {
+      fail(error);
+    }
+  }
+
+  function openAccountForm(user) {
+    clearFieldErrors(accountForm);
+    accountForm.reset();
+    resetTarget = user;
+    const resetting = user !== null;
+    $('accountFormTitle').textContent = resetting ? `Reset password for ${user.username}` : 'Add account';
+    $('accountSaveBtn').textContent = resetting ? 'Set new password' : 'Create account';
+    $('accountPasswordLabel').textContent = resetting ? 'New password (at least 12 characters)' : 'Password (at least 12 characters)';
+    // When resetting, username and role are not asked for. `disabled` also stops the browser demanding them.
+    $('accountUsernameField').hidden = resetting;
+    $('accountRoleField').hidden = resetting;
+    accountForm.elements.username.disabled = resetting;
+    accountForm.elements.role.disabled = resetting;
+    $('accountResetNote').hidden = !resetting;
+    $('accountFormCard').hidden = false;
+    (resetting ? accountForm.elements.password : accountForm.elements.username).focus();
+    $('accountFormCard').scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }
+  const closeAccountForm = () => { $('accountFormCard').hidden = true; clearFieldErrors(accountForm); accountForm.reset(); };
+
+  $('addAccountBtn').addEventListener('click', () => openAccountForm(null));
+  $('accountCancelBtn').addEventListener('click', closeAccountForm);
+
+  accountForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearFieldErrors(accountForm);
+    const f = accountForm.elements;
+    const resetting = resetTarget !== null;
+
+    setBusy($('accountSaveBtn'), true, 'Saving…');
+    try {
+      if (resetting) {
+        await MwakiApi.patch(`/api/users/${resetTarget.id}`, { password: f.password.value });
+        toast(`Password reset for ${resetTarget.username}.`, 'success');
+      } else {
+        await MwakiApi.post('/api/users', { username: f.username.value, role: f.role.value, password: f.password.value });
+        toast(`Account ${f.username.value.trim()} created.`, 'success');
+      }
+      closeAccountForm();
+      await loadAccounts();
+    } catch (error) {
+      if (!(error instanceof MwakiApi.ApiError) || error.status === 401) { fail(error); return; }
+      const hasFieldErrors = Object.keys(error.errors).length > 0;
+      if (!(hasFieldErrors && showFieldErrors(accountForm, error.errors))) showFormError(accountForm, error.message);
+    } finally {
+      setBusy($('accountSaveBtn'), false);
+    }
+  });
+
+  $('accountRows').addEventListener('click', async (event) => {
+    const button = event.target.closest('button[data-action]');
+    if (!button) return;
+    const row = button.closest('tr');
+    const user = { id: Number(row.dataset.id), username: row.dataset.username };
+
+    try {
+      if (button.dataset.action === 'reset') {
+        openAccountForm(user);
+        return;
+      }
+      if (button.dataset.action === 'toggle-role') {
+        if (!window.confirm(`Make "${user.username}" ${button.dataset.role === 'admin' ? 'an admin' : 'a staff member'}?`)) return;
+        await MwakiApi.patch(`/api/users/${user.id}`, { role: button.dataset.role });
+        toast(`${user.username} is now ${button.dataset.role}.`, 'success');
+      } else if (button.dataset.action === 'delete') {
+        if (!window.confirm(`Delete the account "${user.username}"? They will not be able to sign in again.`)) return;
+        await MwakiApi.delete(`/api/users/${user.id}`);
+        toast(`Account ${user.username} deleted.`, 'success');
+      }
+    } catch (error) {
+      fail(error);
+    }
+    loadAccounts();
+  });
+
   // ------------------------------------------------------------------ tabs (keyboard accessible)
 
   const tabs = [...document.querySelectorAll('[role="tab"]')];
+  const visibleTabs = () => tabs.filter((tab) => !tab.hidden);     // staff never see the admin-only tabs
   function selectTab(tab, moveFocus) {
     for (const t of tabs) {
       const active = t === tab;
@@ -197,10 +420,11 @@
   }
   tabs.forEach((tab) => tab.addEventListener('click', () => selectTab(tab, false)));
   $('tabList').addEventListener('keydown', (event) => {
-    const index = tabs.indexOf(document.activeElement);
+    const shown = visibleTabs();
+    const index = shown.indexOf(document.activeElement);
     if (index === -1) return;
-    if (event.key === 'ArrowRight') selectTab(tabs[(index + 1) % tabs.length], true);
-    if (event.key === 'ArrowLeft') selectTab(tabs[(index - 1 + tabs.length) % tabs.length], true);
+    if (event.key === 'ArrowRight') selectTab(shown[(index + 1) % shown.length], true);
+    if (event.key === 'ArrowLeft') selectTab(shown[(index - 1 + shown.length) % shown.length], true);
   });
 
   // ------------------------------------------------------------------ start-up
@@ -219,8 +443,14 @@
     }
     $('adminSubtitle').textContent = `Signed in as ${session.user.username} (${session.user.role}). Review applications and answer messages.`;
     $('adminApp').hidden = false;
-    // Load both tabs at once so both badges are filled in immediately.
-    await Promise.all([loadApplications(), loadMessages()]);
+    // Admins get two more tabs. (Hiding them from staff is a courtesy; the server refuses staff anyway.)
+    const jobs = [loadApplications(), loadMessages()];
+    if (session.user.role === 'admin') {
+      $('tab-programs').hidden = false;
+      $('tab-accounts').hidden = false;
+      jobs.push(loadPrograms(), loadAccounts());
+    }
+    await Promise.all(jobs);                       // load everything at once so the badges fill in immediately
   }
 
   init();

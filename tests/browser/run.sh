@@ -20,7 +20,7 @@ export MWAKI_ADMIN_PASSWORD='Admin-pass-1234' MWAKI_STAFF_PASSWORD='Staff-pass-1
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 FAILED=0; PORT=8810
 
-for suite in phase1 phase2 phase3-students phase3-admin; do
+for suite in phase1 phase2 phase3-students phase3-admin phase4-management; do
   PORT=$((PORT + 1))
   export MWAKI_DB_PATH="$TMP/$suite.sqlite"
   php "$ROOT/database/seed.php" > /dev/null || exit 1

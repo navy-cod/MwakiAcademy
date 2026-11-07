@@ -1622,3 +1622,12 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   .row-actions { white-space: normal; }
   .detail-list { grid-template-columns: 1fr; }
 }
+
+/* =====================================================================
+   PHASE 4 ADDITIONS  (programs and accounts management)
+   ===================================================================== */
+.panel-actions { margin: 0 0 1rem; }
+.badge--admin { background: linear-gradient(135deg, #4a1d8c, #1a4a9c); }
+.badge--staff { background: #4a2d6a; }
+.you-tag { color: #4a2d6a; font-weight: 400; font-size: 0.9rem; }
+.muted { color: #4a2d6a; font-size: 0.85rem; }

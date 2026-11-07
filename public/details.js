@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const { h, toast, formatDate, formatNumber } = MwakiUi;
+  const { h, toast, formatDate, formatNumber, clearFieldErrors, showFieldErrors, showFormError, setBusy } = MwakiUi;
 
   const subtitle = document.getElementById('account-subtitle');
   const accountCard = document.getElementById('accountCard');
@@ -18,6 +18,7 @@
     document.getElementById('accountSince').textContent = formatDate(user.createdAt);
     subtitle.textContent = 'You are signed in. Here is your account and a snapshot of the university.';
     accountCard.hidden = false;
+    document.getElementById('passwordCard').hidden = false;
   }
 
   function statCard(label, value) {
@@ -68,6 +69,35 @@
       toast(error.message, 'error');
     }
   }
+
+  // ------------------------------------------------------------------ change my password
+  const passwordForm = document.getElementById('passwordForm');
+  passwordForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearFieldErrors(passwordForm);
+    const f = passwordForm.elements;
+
+    // "Type it twice" catches typing mistakes BEFORE we change the password. The server never sees the second copy.
+    if (f.newPassword.value !== f.confirmPassword.value) {
+      showFieldErrors(passwordForm, { confirmPassword: 'The two new passwords do not match.' });
+      return;
+    }
+
+    const button = passwordForm.querySelector('button[type="submit"]');
+    setBusy(button, true, 'Changing…');
+    try {
+      await MwakiApi.changePassword(f.currentPassword.value, f.newPassword.value);
+      passwordForm.reset();                      // do not leave passwords sitting in the form
+      toast('Password changed. You are still signed in.', 'success');
+    } catch (error) {
+      if (!(error instanceof MwakiApi.ApiError)) { toast('Something unexpected happened.', 'error'); console.error(error); return; }
+      const shown = error.status === 422 && showFieldErrors(passwordForm, error.errors);
+      if (!shown) showFormError(passwordForm, error.message);
+      if (error.errors && error.errors.currentPassword) f.currentPassword.value = '';
+    } finally {
+      setBusy(button, false);
+    }
+  });
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     try {

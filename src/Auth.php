@@ -134,33 +134,10 @@ final class Auth
      */
     public static function attempt(string $username, string $password): array
     {
-        $ip      = Http::clientIp();
-        $key     = strtolower($username);
-        $window  = (int) config('auth.window_seconds');
-        $max     = (int) config('auth.max_attempts');
-        $since   = time() - $window;
+        $ip  = Http::clientIp();
+        $key = strtolower($username);
 
-        // CONCEPT: throttling. Without a limit, a script could try millions of passwords.
-        // We count FAILED attempts from this username + IP in the last 15 minutes.
-        $failures = (int) Database::scalar(
-            'SELECT COUNT(*) FROM login_attempts WHERE username = ? AND ip = ? AND attempted_at > ?',
-            [$key, $ip, $since]
-        );
-        if ($failures >= $max) {
-            $oldest  = (int) Database::scalar(
-                'SELECT MIN(attempted_at) FROM login_attempts WHERE username = ? AND ip = ? AND attempted_at > ?',
-                [$key, $ip, $since]
-            );
-            $seconds = max(1, $oldest + $window - time());
-            header('Retry-After: ' . $seconds);
-            $minutes = (int) ceil($seconds / 60);
-            throw new HttpException(
-                429,
-                "Too many failed sign-in attempts. Please wait $minutes minute" . ($minutes === 1 ? '' : 's') . ' and try again.',
-                [],
-                'throttled'
-            );
-        }
+        self::assertNotThrottled($key, $ip);
 
         $user = Database::one('SELECT id, username, role, password_hash, created_at FROM users WHERE username = ?', [$username]);
 
@@ -169,14 +146,13 @@ final class Auth
         $passwordOk = password_verify($password, $user['password_hash'] ?? self::DUMMY_HASH);
 
         if ($user === null || !$passwordOk) {
-            Database::execute('INSERT INTO login_attempts (username, ip, attempted_at) VALUES (?, ?, ?)', [$key, $ip, time()]);
-            Database::execute('DELETE FROM login_attempts WHERE attempted_at <= ?', [$since]);   // tidy old rows
+            self::recordFailure($key, $ip);
             // SECURITY: the SAME message whether the username or the password was wrong,
             // so the response never reveals which usernames exist.
             throw new HttpException(401, 'Invalid username or password.', [], 'bad_credentials');
         }
 
-        Database::execute('DELETE FROM login_attempts WHERE username = ? AND ip = ?', [$key, $ip]);
+        self::clearFailures($key, $ip);
 
         // If PHP's recommended hashing strength has increased since this hash was made, upgrade it.
         if (password_needs_rehash($user['password_hash'], PASSWORD_DEFAULT)) {
@@ -192,6 +168,80 @@ final class Auth
         self::$userLoaded = false;
 
         return self::publicUser($user);
+    }
+
+    /**
+     * Change the password of the user who is signed in.
+     *
+     * Why ask for the CURRENT password when they are already signed in? A session can be left open on a
+     * shared computer or stolen. Without this check, whoever holds the session could lock the real owner out.
+     * Wrong guesses are throttled like sign-in guesses (in their own bucket, so guessing here cannot lock
+     * the owner out of signing in).
+     */
+    public static function changePassword(array $user, string $current, string $new): void
+    {
+        $ip  = Http::clientIp();
+        $key = 'pw:' . strtolower($user['username']);
+        self::assertNotThrottled($key, $ip);
+
+        $row = Database::one('SELECT password_hash FROM users WHERE id = ?', [$user['id']]);
+        if ($row === null || !password_verify($current, $row['password_hash'])) {
+            self::recordFailure($key, $ip);
+            // 422, not 401: a 401 would make the pages think the session ended and send you to the login page.
+            throw new HttpException(422, 'Please correct the highlighted fields.', ['currentPassword' => 'That is not your current password.'], 'bad_password');
+        }
+        self::clearFailures($key, $ip);
+
+        Database::execute('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash($new, PASSWORD_DEFAULT), $user['id']]);
+
+        // A security-sensitive change: start a fresh session id and CSRF token, as at sign-in.
+        session_regenerate_id(true);
+        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+    }
+
+    // ------------------------------------------------------------------ throttling (shared by sign-in and password change)
+
+    /**
+     * CONCEPT: throttling. Without a limit, a script could try millions of passwords.
+     * We count FAILED attempts for this key + IP in the last 15 minutes and refuse once there are too many.
+     */
+    private static function assertNotThrottled(string $key, string $ip): void
+    {
+        $window = (int) config('auth.window_seconds');
+        $max    = (int) config('auth.max_attempts');
+        $since  = time() - $window;
+
+        $failures = (int) Database::scalar(
+            'SELECT COUNT(*) FROM login_attempts WHERE username = ? AND ip = ? AND attempted_at > ?',
+            [$key, $ip, $since]
+        );
+        if ($failures < $max) {
+            return;
+        }
+        $oldest = (int) Database::scalar(
+            'SELECT MIN(attempted_at) FROM login_attempts WHERE username = ? AND ip = ? AND attempted_at > ?',
+            [$key, $ip, $since]
+        );
+        $seconds = max(1, $oldest + $window - time());
+        header('Retry-After: ' . $seconds);
+        $minutes = (int) ceil($seconds / 60);
+        throw new HttpException(
+            429,
+            "Too many failed sign-in attempts. Please wait $minutes minute" . ($minutes === 1 ? '' : 's') . ' and try again.',
+            [],
+            'throttled'
+        );
+    }
+
+    private static function recordFailure(string $key, string $ip): void
+    {
+        Database::execute('INSERT INTO login_attempts (username, ip, attempted_at) VALUES (?, ?, ?)', [$key, $ip, time()]);
+        Database::execute('DELETE FROM login_attempts WHERE attempted_at <= ?', [time() - (int) config('auth.window_seconds')]);   // tidy old rows
+    }
+
+    private static function clearFailures(string $key, string $ip): void
+    {
+        Database::execute('DELETE FROM login_attempts WHERE username = ? AND ip = ?', [$key, $ip]);
     }
 
     public static function logout(): void

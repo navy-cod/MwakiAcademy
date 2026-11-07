@@ -51,6 +51,28 @@
       </div>
     </section>
 
+    <section class="form-card stack-gap" id="passwordCard" aria-labelledby="passwordTitle" hidden>
+      <h2 id="passwordTitle">Change my password</h2>
+      <p>Use at least 12 characters. You stay signed in on this device.</p>
+      <form id="passwordForm" method="post">
+        <div class="form-alert" data-form-error role="alert" hidden></div>
+
+        <label for="currentPassword">Current password</label>
+        <input type="password" id="currentPassword" name="currentPassword" required maxlength="200" autocomplete="current-password">
+        <p class="field-error" data-error-for="currentPassword" hidden></p>
+
+        <label for="newPassword">New password</label>
+        <input type="password" id="newPassword" name="newPassword" required minlength="12" maxlength="200" autocomplete="new-password">
+        <p class="field-error" data-error-for="newPassword" hidden></p>
+
+        <label for="confirmPassword">Repeat the new password</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required minlength="12" maxlength="200" autocomplete="new-password">
+        <p class="field-error" data-error-for="confirmPassword" hidden></p>
+
+        <button type="submit" class="btn"><i class="fas fa-key" aria-hidden="true"></i> Change password</button>
+      </form>
+    </section>
+
     <section id="statsSection" aria-labelledby="statsTitle" hidden>
       <h2 id="statsTitle" class="section-title">Campus snapshot</h2>
       <div class="stat-grid" id="statGrid"></div>

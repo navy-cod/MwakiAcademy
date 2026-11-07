@@ -124,6 +124,13 @@
     return data.user;
   }
 
+  async function changePassword(currentPassword, newPassword) {
+    const data = await request('POST', '/api/auth/password', { currentPassword, newPassword });
+    // The server started a fresh session when the password changed, so use the NEW CSRF token from now on.
+    csrfToken = data.csrfToken;
+    return data;
+  }
+
   async function logout() {
     await request('POST', '/api/auth/logout', {});
     csrfToken = null;
@@ -141,5 +148,6 @@
     session: () => fetchSession(),
     login,
     logout,
+    changePassword,
   };
 })();

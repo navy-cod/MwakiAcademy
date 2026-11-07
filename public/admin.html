@@ -44,6 +44,10 @@
         <button type="button" role="tab" class="tab" id="tab-messages" aria-selected="false" aria-controls="panel-messages" tabindex="-1">
           Messages <span class="tab-count" id="newCount"></span>
         </button>
+        <!-- These two tabs are for ADMINS. They stay hidden for staff (admin.js reveals them), and the server
+             refuses staff who call the same API anyway. -->
+        <button type="button" role="tab" class="tab" id="tab-programs" aria-selected="false" aria-controls="panel-programs" tabindex="-1" hidden>Programs</button>
+        <button type="button" role="tab" class="tab" id="tab-accounts" aria-selected="false" aria-controls="panel-accounts" tabindex="-1" hidden>Accounts</button>
       </div>
 
       <section role="tabpanel" id="panel-applications" aria-labelledby="tab-applications">
@@ -100,6 +104,123 @@
           <span class="pager-info" aria-live="polite"></span>
           <button type="button" class="btn btn-outline btn-small" data-dir="1">Next &rarr;</button>
         </nav>
+      </section>
+
+      <!-- ============================ PROGRAMS (admins) ============================ -->
+      <section role="tabpanel" id="panel-programs" aria-labelledby="tab-programs" hidden>
+        <p class="status-note">Programs you add here appear at once on the admission form, the tuition page and the student form.
+          (<code>faculties.html</code> is a plain page: edit it by hand.)</p>
+        <div class="panel-actions">
+          <button type="button" class="btn" id="addProgramBtn"><i class="fas fa-plus" aria-hidden="true"></i> Add program</button>
+        </div>
+
+        <section class="form-card stack-gap" id="programFormCard" aria-labelledby="programFormTitle" hidden>
+          <h2 id="programFormTitle">Add program</h2>
+          <form id="programForm" method="post">
+            <div class="form-alert" data-form-error role="alert" hidden></div>
+
+            <label for="p-name">Program name</label>
+            <input type="text" id="p-name" name="name" required minlength="3" maxlength="100" placeholder="BSc Data Science" autocomplete="off">
+            <p class="field-error" data-error-for="name" hidden></p>
+
+            <label for="p-faculty">Faculty</label>
+            <input type="text" id="p-faculty" name="faculty" required minlength="2" maxlength="80" list="facultyList" autocomplete="off">
+            <datalist id="facultyList"></datalist>
+            <p class="field-error" data-error-for="faculty" hidden></p>
+
+            <label for="p-tuition">Annual tuition (KSh) &mdash; leave both fee boxes empty if not yet published</label>
+            <input type="number" id="p-tuition" name="annualTuitionKes" min="0" max="100000000" step="1">
+            <p class="field-error" data-error-for="annualTuitionKes" hidden></p>
+
+            <label for="p-fees">Additional fees (KSh)</label>
+            <input type="number" id="p-fees" name="additionalFeesKes" min="0" max="100000000" step="1">
+            <p class="field-error" data-error-for="additionalFeesKes" hidden></p>
+
+            <label for="p-minKcse">Minimum KCSE mean grade</label>
+            <select id="p-minKcse" name="minKcse" required>
+              <option value="">--Select Grade--</option>
+              <option value="A">A</option><option value="A-">A-</option><option value="B+">B+</option><option value="B">B</option>
+              <option value="B-">B-</option><option value="C+">C+</option><option value="C">C</option><option value="C-">C-</option>
+            </select>
+            <p class="field-error" data-error-for="minKcse" hidden></p>
+
+            <span class="field-label" id="intakesLabel">Intakes offered (choose at least one)</span>
+            <div class="checkbox-group" role="group" aria-labelledby="intakesLabel">
+              <input type="checkbox" id="p-int-Jan" name="intakes" value="January"><label for="p-int-Jan">January</label>
+              <input type="checkbox" id="p-int-Mar" name="intakes" value="March"><label for="p-int-Mar">March</label>
+              <input type="checkbox" id="p-int-May" name="intakes" value="May"><label for="p-int-May">May</label>
+              <input type="checkbox" id="p-int-Sep" name="intakes" value="September"><label for="p-int-Sep">September</label>
+            </div>
+            <p class="field-error" data-error-for="intakes" hidden></p>
+
+            <div class="form-buttons">
+              <button type="submit" class="btn" id="programSaveBtn">Save program</button>
+              <button type="button" class="btn btn-outline" id="programCancelBtn">Cancel</button>
+            </div>
+          </form>
+        </section>
+
+        <p class="status-note" id="programSummary" role="status"></p>
+        <div class="table-responsive">
+          <table class="admin-table">
+            <caption class="visually-hidden">Programs</caption>
+            <thead>
+              <tr><th scope="col">Program</th><th scope="col">Faculty</th><th scope="col">Tuition + fees</th><th scope="col">Min. KCSE</th><th scope="col">Intakes</th><th scope="col">Actions</th></tr>
+            </thead>
+            <tbody id="programRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================ ACCOUNTS (admins) ============================ -->
+      <section role="tabpanel" id="panel-accounts" aria-labelledby="tab-accounts" hidden>
+        <p class="status-note">Staff accounts. Passwords are never shown or stored in plain text; to change your <em>own</em> password use
+          &ldquo;Change my password&rdquo; on your <a href="details.html">Account page</a>.</p>
+        <div class="panel-actions">
+          <button type="button" class="btn" id="addAccountBtn"><i class="fas fa-user-plus" aria-hidden="true"></i> Add account</button>
+        </div>
+
+        <section class="form-card stack-gap" id="accountFormCard" aria-labelledby="accountFormTitle" hidden>
+          <h2 id="accountFormTitle">Add account</h2>
+          <form id="accountForm" method="post">
+            <div class="form-alert" data-form-error role="alert" hidden></div>
+
+            <div id="accountUsernameField">
+              <label for="a-username">Username</label>
+              <input type="text" id="a-username" name="username" required minlength="3" maxlength="50" autocomplete="off" autocapitalize="none" spellcheck="false">
+              <p class="field-error" data-error-for="username" hidden></p>
+            </div>
+
+            <div id="accountRoleField">
+              <label for="a-role">Role</label>
+              <select id="a-role" name="role" required>
+                <option value="staff">Staff &mdash; can manage students, applications and messages</option>
+                <option value="admin">Admin &mdash; staff powers, plus programs, accounts and deleting students</option>
+              </select>
+              <p class="field-error" data-error-for="role" hidden></p>
+            </div>
+
+            <label for="a-password" id="accountPasswordLabel">Password (at least 12 characters)</label>
+            <input type="password" id="a-password" name="password" required minlength="12" maxlength="200" autocomplete="new-password">
+            <p class="field-error" data-error-for="password" hidden></p>
+            <p class="status-note" id="accountResetNote" hidden>The person can keep using any session they already have open until it times out (30 minutes idle).</p>
+
+            <div class="form-buttons">
+              <button type="submit" class="btn" id="accountSaveBtn">Create account</button>
+              <button type="button" class="btn btn-outline" id="accountCancelBtn">Cancel</button>
+            </div>
+          </form>
+        </section>
+
+        <div class="table-responsive">
+          <table class="admin-table">
+            <caption class="visually-hidden">Staff accounts</caption>
+            <thead>
+              <tr><th scope="col">Username</th><th scope="col">Role</th><th scope="col">Created</th><th scope="col">Actions</th></tr>
+            </thead>
+            <tbody id="accountRows"></tbody>
+          </table>
+        </div>
       </section>
     </div>
   </main>
