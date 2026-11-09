@@ -21,6 +21,8 @@ return [
         // server: stack traces tell attackers how your code is built.
         // Turn on for local work with:  MWAKI_DEBUG=1 php -S ...
         'debug' => getenv('MWAKI_DEBUG') === '1',
+        'require_login' => getenv('MWAKI_REQUIRE_LOGIN') !== '0',
+        'public_pages' => ['/login.html'],
     ],
 
     'paths' => [

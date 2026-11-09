@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/src/bootstrap.php';
 
+use Mwaki\Auth;
 use Mwaki\Http;
 
 $public = realpath(__DIR__ . '/public');
@@ -29,8 +30,27 @@ if (str_contains($path, "\0")) {              // a NUL byte in a path is always 
     exit('Bad request');
 }
 
+function is_signed_in(): bool
+{
+    try {
+        Auth::start();
+        return Auth::user() !== null;
+    } catch (\Throwable $e) {
+        error_log('[mwaki] sign-in check failed: ' . $e->getMessage());
+        return false;
+    }
+}
+
+function needs_login(string $path): bool
+{
+    return (bool) config('app.require_login')
+        && str_ends_with(strtolower($path), '.html')
+        && !in_array($path, (array) config('app.public_pages'), true);
+}
+
 if ($path === '/') {
-    header('Location: /home.html', true, 302);
+    $target = (!config('app.require_login') || is_signed_in()) ? '/home.html' : '/login.html';
+    header('Location: ' . $target, true, 302);
     exit;
 }
 
@@ -39,6 +59,14 @@ if (str_starts_with($path, '/api/')) {
     return true;
 }
 
+if (needs_login($path) && !is_signed_in()) {
+    Http::securityHeaders();
+    $wanted = ltrim($path, '/');
+    $query = preg_match('~^[A-Za-z0-9_\-/]+\.html$~', $wanted) === 1 ? '?next=' . rawurlencode($wanted) : '';
+    header('Cache-Control: no-store');
+    header('Location: /login.html' . $query, true, 302);
+    exit;
+}
 // SECURITY: path traversal. A URL like /../config/config.php tries to climb out of /public.
 // realpath() resolves any "../" parts to the true location on disk, and then we insist the
 // result is still INSIDE /public. (We must check this ourselves because we read files below.)
