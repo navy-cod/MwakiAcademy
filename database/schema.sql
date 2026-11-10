@@ -1,27 +1,5 @@
--- database/schema.sql
---
--- The blueprint of the database. Safe to run repeatedly: every statement says
--- "IF NOT EXISTS", so running it on an existing database changes nothing.
---
--- CONCEPT: a TABLE is like a spreadsheet tab (columns = fields, rows = records).
---   PRIMARY KEY      a unique id for each row
---   NOT NULL         the column must have a value
---   UNIQUE           no two rows may share the value
---   CHECK(...)       the database itself rejects impossible values (a safety net behind our PHP validation)
---   FOREIGN KEY      a column that must point at a real row in another table (no student can
---                    belong to a program that does not exist)
--- Dates are stored as text in ISO format (YYYY-MM-DD) because it sorts correctly as plain text.
 
 PRAGMA foreign_keys = ON;
-
--- Staff accounts. Passwords are stored ONLY as hashes.
-CREATE TABLE IF NOT EXISTS users (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    username      TEXT    NOT NULL UNIQUE COLLATE NOCASE,   -- NOCASE: "Admin" and "admin" are the same
-    password_hash TEXT    NOT NULL,
-    role          TEXT    NOT NULL CHECK (role IN ('admin', 'staff')),
-    created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
-);
 
 -- The degree programs on offer. One row per program.
 CREATE TABLE IF NOT EXISTS programs (
@@ -53,6 +31,22 @@ CREATE TABLE IF NOT EXISTS students (
     updated_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_students_program ON students(program_id);
+
+-- Staff AND student sign-in accounts. Passwords are stored ONLY as hashes.
+-- role 'admin' / 'staff': staff accounts (student_id IS NULL)
+-- role 'student':          a student who can sign in (student_id points at a students row).
+--                          Deleting the student cascades to this row (ON DELETE CASCADE).
+CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    username      TEXT    NOT NULL UNIQUE COLLATE NOCASE,   -- NOCASE: "Admin" and "admin" are the same
+    password_hash TEXT    NOT NULL,
+    role          TEXT    NOT NULL CHECK (role IN ('admin', 'staff', 'student')),
+    student_id    INTEGER REFERENCES students(id) ON DELETE CASCADE,
+    created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+    -- The database itself enforces "student accounts belong to a student, and only they do":
+    CHECK ((role = 'student' AND student_id IS NOT NULL) OR (role <> 'student' AND student_id IS NULL))
+);
+CREATE INDEX IF NOT EXISTS idx_users_student ON users(student_id);
 
 -- Online admission applications (Phase 2).
 CREATE TABLE IF NOT EXISTS applications (

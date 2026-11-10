@@ -12,12 +12,6 @@
   const submitButton = form.querySelector('button[type="submit"]');
   const STORAGE_KEY = "mwaki.username";
 
-  // ------------------------------------------------------------ "remember my username"
-  // CONCEPT: Web Storage. localStorage keeps small strings in the browser, per website, and
-  // they survive closing the browser. It is NOT secure storage (any script on the page can
-  // read it), so we store only the username, NEVER the password.
-  // The try/catch is needed because some browsers (private mode, strict settings) throw
-  // when storage is blocked. The page must keep working anyway.
   function readRemembered() {
     try {
       return localStorage.getItem(STORAGE_KEY);
@@ -34,25 +28,20 @@
     }
   }
 
-  // ------------------------------------------------------------ where to go after sign-in
-  /*
-   * Other pages send visitors here as  login.html?next=details.html  so we can return them
-   * to where they were heading. SECURITY: "open redirect". If we blindly did
-   * location = params.get('next'), a link such as ?next=https://evil.example would bounce a
-   * freshly signed-in user to a look-alike site. So we ALLOW-LIST the shape: letters, digits,
-   * "_", "-", "/" and a final ".html", nothing else (no colon, no leading slash, no "//").
-   */
-  function destinationAfterLogin() {
+  function destinationAfterLogin(user) {
     const next = new URLSearchParams(window.location.search).get("next");
     const looksSafe =
       next !== null &&
       /^[A-Za-z0-9_\-/]+\.html$/.test(next) &&
       !next.startsWith("/") &&
       !next.includes("//");
-    return looksSafe ? next : "home.html";
+    if (looksSafe) return next;
+    if (user && (user.role === "admin" || user.role === "staff"))
+      return "admin.html";
+    if (user && user.role === "student") return "student-portal.html";
+    return "home.html";
   }
 
-  // ------------------------------------------------------------ show/hide password button
   const passwordInput = form.elements.password;
   const toggle = form.querySelector(".password-toggle");
   if (toggle) {
@@ -70,7 +59,7 @@
     });
   }
 
-  // ------------------------------------------------------------ submit
+  // submit
   form.addEventListener("submit", async (event) => {
     // By default a form submit makes the browser load a new page. We cancel that and send
     // the data ourselves with fetch(), so the page never reloads and we control the result.
@@ -82,9 +71,9 @@
 
     setBusy(submitButton, true, "Signing in…");
     try {
-      await MwakiApi.login(username, password);
+      const user = await MwakiApi.login(username, password);
       writeRemembered(username, form.elements.rememberUsername.checked);
-      window.location.assign(destinationAfterLogin());
+      window.location.assign(destinationAfterLogin(user));
     } catch (error) {
       setBusy(submitButton, false);
       if (!(error instanceof MwakiApi.ApiError)) {
@@ -106,7 +95,7 @@
 
   form.addEventListener("reset", () => clearFieldErrors(form));
 
-  // ------------------------------------------------------------ on page load
+  // on page load
   const remembered = readRemembered();
   if (remembered) {
     form.elements.username.value = remembered;
@@ -116,7 +105,8 @@
   // Already signed in? Skip the form.
   MwakiApi.session()
     .then((session) => {
-      if (session.user) window.location.replace(destinationAfterLogin());
+      if (session.user)
+        window.location.replace(destinationAfterLogin(session.user));
     })
     .catch(() => {
       /* server unreachable: the form still shows and reports the error on submit */

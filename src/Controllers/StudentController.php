@@ -166,6 +166,101 @@ final class StudentController
         Http::json(204);                                      // 204 No Content: success, nothing to send back
     }
 
+        /**
+     * POST /api/students/{id}/login  -  ADMINS ONLY.
+     * Creates a student account so the student can sign in and see their own record.
+     * Returns the generated username and password ONCE. The password is never stored in
+     * plain text and never shown again.
+     */
+    public static function createLogin(array $params): void
+    {
+        Auth::requireUser('admin');
+        $id = (int) $params['id'];
+
+        $student = Database::one(
+            'SELECT id, student_code, first_name, last_name FROM students WHERE id = ?',
+            [$id]
+        );
+        if ($student === null) {
+            throw new HttpException(404, 'That student does not exist.', [], 'not_found');
+        }
+
+        $existing = Database::one('SELECT id, username FROM users WHERE student_id = ?', [$id]);
+        if ($existing !== null) {
+            throw new HttpException(409,
+                "This student already has a login (username: {$existing['username']}). Use \"Reset password\" if they have lost it.",
+                [], 'duplicate');
+        }
+
+        // Username = the student code in lower case (e.g. MU-2024-011 -> mu-2024-011).
+        // If some other account already uses that name, append -2, -3, ... until it is free.
+        $base     = strtolower($student['student_code']);
+        $username = $base;
+        $suffix   = 1;
+        while (Database::scalar('SELECT 1 FROM users WHERE username = ?', [$username]) !== null) {
+            $username = $base . '-' . (++$suffix);
+        }
+
+        // Same generation as database/seed.php and database/set-password.php (16 URL-safe chars).
+        $password = rtrim(strtr(base64_encode(random_bytes(12)), '+/', '-_'), '=');
+        $hash     = password_hash($password, PASSWORD_DEFAULT);
+
+        $userId = Database::insert(
+            "INSERT INTO users (username, password_hash, role, student_id) VALUES (?, ?, 'student', ?)",
+            [$username, $hash, $id]
+        );
+
+        Http::json(201, [
+            'created'  => true,
+            'userId'   => $userId,
+            'username' => $username,
+            'password' => $password,
+        ]);
+    }
+
+    /**
+     * POST /api/students/{id}/reset-password  -  ADMINS AND STAFF.
+     * Generates a new password for a student's login. Returns it ONCE. Their old password
+     * stops working immediately, but any session they already have open stays valid until it
+     * times out (same limit as resetting a staff password in the Admin page).
+     */
+    public static function resetPassword(array $params): void
+    {
+        Auth::requireUser('admin', 'staff');
+        $id = (int) $params['id'];
+
+        $student = Database::one(
+            'SELECT id, first_name, last_name FROM students WHERE id = ?',
+            [$id]
+        );
+        if ($student === null) {
+            throw new HttpException(404, 'That student does not exist.', [], 'not_found');
+        }
+
+        $user = Database::one('SELECT id, username FROM users WHERE student_id = ?', [$id]);
+        if ($user === null) {
+            throw new HttpException(404, 'This student does not have a login yet.', [], 'no_login');
+        }
+
+        $password = rtrim(strtr(base64_encode(random_bytes(12)), '+/', '-_'), '=');
+        Database::execute(
+            'UPDATE users SET password_hash = ? WHERE id = ?',
+            [password_hash($password, PASSWORD_DEFAULT), $user['id']]
+        );
+        // Clear the throttle lock-out for this username so a forgotten password cannot keep them locked out.
+        Database::execute(
+            'DELETE FROM login_attempts WHERE username IN (?, ?)',
+            [strtolower($user['username']), 'pw:' . strtolower($user['username'])]
+        );
+
+        Http::json(200, [
+            'created'  => false,
+            'userId'   => (int) $user['id'],
+            'username' => $user['username'],
+            'password' => $password,
+        ]);
+    }
+
     // ------------------------------------------------------------------ helpers
 
     /** Validate a create/update body. Returns clean values; throws 422 with per-field messages. */
@@ -245,6 +340,11 @@ final class StudentController
     /** Database row -> the JSON the browser receives. Age is CALCULATED here, never stored. */
     private static function present(array $r): array
     {
+        // Does this student have a login? One small query per student is fine at this scale.
+        $login = Database::one(
+            'SELECT id, username FROM users WHERE student_id = ?',
+            [$r['id']]
+        );
         return [
             'id'          => (int) $r['id'],
             'studentCode' => $r['student_code'],
@@ -259,6 +359,10 @@ final class StudentController
             'dob'         => $r['dob'],
             'age'         => (new \DateTimeImmutable($r['dob']))->diff(new \DateTimeImmutable('today'))->y,
             'imageUrl'    => $r['image_url'],
+            'login'       => $login === null ? null : [
+                'userId'   => (int) $login['id'],
+                'username' => $login['username'],
+            ],
             'createdAt'   => str_replace(' ', 'T', $r['created_at']) . 'Z',
             'updatedAt'   => str_replace(' ', 'T', $r['updated_at']) . 'Z',
         ];

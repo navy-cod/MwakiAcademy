@@ -2183,3 +2183,107 @@ body.login-page .nav-toggle {
     padding-top: 2rem;
   }
 }
+
+/* =====================================================================
+   PHASE 5 ADDITIONS  (admin dashboard overview)
+   ===================================================================== */
+
+.overview {
+  margin: 0 0 1.5rem;
+}
+
+/* .stat-grid and .stat-card already exist (Phase 1, used by details.html).
+   On narrow screens we just want two per row. */
+@media (max-width: 768px) {
+  .overview .stat-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.action-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.25rem 1.35rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(180, 140, 255, 0.25);
+  border-radius: 18px;
+  box-shadow: 0 10px 25px rgba(106, 47, 167, 0.08);
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    border-color 0.15s;
+}
+.action-card:hover,
+.action-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 35px rgba(106, 47, 167, 0.18);
+  border-color: rgba(180, 140, 255, 0.55);
+}
+.action-card:focus-visible {
+  outline: 3px solid #b87cff;
+  outline-offset: 2px;
+}
+.action-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4a1d8c, #1a4a9c);
+  color: #fff;
+  font-size: 1.1rem;
+  margin-bottom: 0.35rem;
+}
+.action-card-title {
+  font-weight: 700;
+  color: #2a1b4a;
+  font-size: 1rem;
+}
+.action-card-desc {
+  font-size: 0.9rem;
+  color: #4a2d6a;
+  line-height: 1.4;
+}
+
+/* =====================================================================
+   PHASE 5 ADDITIONS  (student portal)
+   ===================================================================== */
+
+.portal-card .record-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1.5rem;
+  margin: 1rem 0;
+}
+.portal-card .record-list dt {
+  font-weight: 600;
+  color: #2e0b5e;
+}
+.portal-card .record-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+  .portal-card .record-list {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
+  .portal-card .record-list dd {
+    margin-bottom: 0.6rem;
+  }
+}

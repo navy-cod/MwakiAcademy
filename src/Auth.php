@@ -78,7 +78,7 @@ final class Auth
         $id = $_SESSION['user_id'] ?? null;
         if ($id !== null) {
             self::$user = Database::one(
-                'SELECT id, username, role, created_at FROM users WHERE id = ?',
+                'SELECT id, username, role, student_id, created_at FROM users WHERE id = ?',
                 [$id]
             );
             if (self::$user === null) {
@@ -98,6 +98,7 @@ final class Auth
             'id'        => (int) $row['id'],
             'username'  => $row['username'],
             'role'      => $row['role'],
+            'studentId' => ($row['student_id'] ?? null) === null ? null : (int) $row['student_id'],
             // SQLite stores UTC as "2026-11-02 10:30:00"; convert to ISO 8601 for JavaScript.
             'createdAt' => str_replace(' ', 'T', (string) $row['created_at']) . 'Z',
         ];

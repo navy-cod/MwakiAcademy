@@ -30,15 +30,20 @@ if (str_contains($path, "\0")) {              // a NUL byte in a path is always 
     exit('Bad request');
 }
 
-function is_signed_in(): bool
+function signed_in_user(): ?array
 {
     try {
         Auth::start();
-        return Auth::user() !== null;
+        return Auth::user();
     } catch (\Throwable $e) {
         error_log('[mwaki] sign-in check failed: ' . $e->getMessage());
-        return false;
+        return null;
     }
+}
+
+function is_signed_in(): bool
+{
+    return signed_in_user() !== null;
 }
 
 function needs_login(string $path): bool
@@ -49,7 +54,23 @@ function needs_login(string $path): bool
 }
 
 if ($path === '/') {
-    $target = (!config('app.require_login') || is_signed_in()) ? '/home.html' : '/login.html';
+    if (!config('app.require_login')) {
+        header('Location: /home.html', true, 302);
+        exit;
+    }
+    $user = signed_in_user();
+    if ($user === null) {
+        header('Location: /login.html', true, 302);
+        exit;
+    }
+    $role = $user['role'] ?? '';
+    if ($role === 'admin' || $role === 'staff') {
+        $target = '/admin.html';
+    } elseif ($role === 'student') {
+        $target = '/student-portal.html';
+    } else {
+        $target = '/home.html';
+    }
     header('Location: ' . $target, true, 302);
     exit;
 }
@@ -66,6 +87,16 @@ if (needs_login($path) && !is_signed_in()) {
     header('Cache-Control: no-store');
     header('Location: /login.html' . $query, true, 302);
     exit;
+}
+
+// A student may open only their own portal and the public pages. Any staff page redirects them.
+// (This is a convenience: the API endpoints they would reach also refuse them with 403.)
+if (is_signed_in()) {
+    $role = ($u = signed_in_user())['role'] ?? '';
+    if ($role === 'student' && in_array($path, ['/admin.html', '/details.html', '/e_students/students.html'], true)) {
+        header('Location: /student-portal.html', true, 302);
+        exit;
+    }
 }
 // SECURITY: path traversal. A URL like /../config/config.php tries to climb out of /public.
 // realpath() resolves any "../" parts to the true location on disk, and then we insist the

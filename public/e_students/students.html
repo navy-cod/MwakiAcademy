@@ -1,167 +1,276 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="students.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="students.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
     <title>Student Management System - Mwaki University</title>
-</head>
-<body>
+  </head>
+  <body>
     <div id="app">
-        <header class="header">
-            <div class="header-left">
-                <h1>🎓 Student Management System</h1>
-                <p class="header-subtitle">Manage student records efficiently</p>
-            </div>
-            <div class="header-stats">
-                <div class="stat-item">
-                    <span class="stat-number" id="totalStudents">0</span>
-                    <span class="stat-label">Total Students</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number" id="avgGrade">0%</span>
-                    <span class="stat-label">Average Grade</span>
-                </div>
-            </div>
-            <div class="header-actions">
-                <p class="header-user" id="headerUser" hidden>
-                    <span id="userName"></span>
-                    <button type="button" class="link-btn" id="logoutBtn">Sign out</button>
-                </p>
-                <!-- disabled until the page has confirmed that you are signed in -->
-                <button class="add-btn" id="addBtn" type="button" disabled>
-                    <span class="btn-icon">+</span> Add Student
-                </button>
-            </div>
-        </header>
+      <header class="header">
+        <div class="header-left">
+          <h1>🎓 Student Management System</h1>
+          <p class="header-subtitle">Manage student records efficiently</p>
+          <a href="../admin.html" class="back-to-admin"
+            >Back to Admin Dashboard</a
+          >
+        </div>
+        <div class="header-stats">
+          <div class="stat-item">
+            <span class="stat-number" id="totalStudents">0</span>
+            <span class="stat-label">Total Students</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" id="avgGrade">0%</span>
+            <span class="stat-label">Average Grade</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <p class="header-user" id="headerUser" hidden>
+            <span id="userName"></span>
+            <button type="button" class="link-btn" id="logoutBtn">
+              Sign out
+            </button>
+          </p>
+          <!-- disabled until the page has confirmed that you are signed in -->
+          <button class="add-btn" id="addBtn" type="button" disabled>
+            <span class="btn-icon">+</span> Add Student
+          </button>
+        </div>
+      </header>
 
-        <div class="controls-bar">
-            <div class="search-box">
-                <input type="search" id="searchInput" placeholder="Search by name, email or ID..." aria-label="Search students" maxlength="100" autocomplete="off">
-                <span class="search-icon" aria-hidden="true">🔍</span>
-            </div>
-            <div class="sort-box">
-                <label for="sortSelect">Sort by:</label>
-                <select id="sortSelect">
-                    <option value="name">Name (A-Z)</option>
-                    <option value="nameDesc">Name (Z-A)</option>
-                    <option value="grade">Grade (Low to High)</option>
-                    <option value="gradeDesc">Grade (High to Low)</option>
-                    <option value="age">Age (Young to Old)</option>
-                    <option value="ageDesc">Age (Old to Young)</option>
-                </select>
-            </div>
+      <div class="controls-bar">
+        <div class="search-box">
+          <input
+            type="search"
+            id="searchInput"
+            placeholder="Search by name, email or ID..."
+            aria-label="Search students"
+            maxlength="100"
+            autocomplete="off"
+          />
+          <span class="search-icon" aria-hidden="true">🔍</span>
+        </div>
+        <div class="sort-box">
+          <label for="sortSelect">Sort by:</label>
+          <select id="sortSelect">
+            <option value="name">Name (A-Z)</option>
+            <option value="nameDesc">Name (Z-A)</option>
+            <option value="grade">Grade (Low to High)</option>
+            <option value="gradeDesc">Grade (High to Low)</option>
+            <option value="age">Age (Young to Old)</option>
+            <option value="ageDesc">Age (Old to Young)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="student-container">
+        <!-- Student List Section -->
+        <div class="student-list">
+          <div class="student-list-title">Student List</div>
+          <div class="student-list-items" id="studentList"></div>
+          <nav
+            class="pagination"
+            id="pagination"
+            aria-label="Student list pages"
+            hidden
+          >
+            <button type="button" class="page-btn" id="prevPage">
+              &larr; Prev
+            </button>
+            <span id="pageInfo" aria-live="polite"></span>
+            <button type="button" class="page-btn" id="nextPage">
+              Next &rarr;
+            </button>
+          </nav>
         </div>
 
-        <div class="student-container">
-            <!-- Student List Section -->
-            <div class="student-list">
-                <div class="student-list-title">Student List</div>
-                <div class="student-list-items" id="studentList"></div>
-                <nav class="pagination" id="pagination" aria-label="Student list pages" hidden>
-                    <button type="button" class="page-btn" id="prevPage">&larr; Prev</button>
-                    <span id="pageInfo" aria-live="polite"></span>
-                    <button type="button" class="page-btn" id="nextPage">Next &rarr;</button>
-                </nav>
-            </div>
-
-            <!-- Student Detail Section -->
-            <div class="student-detail">
-                <div class="student-detail-title">Student Information</div>
-                <div class="student-detail-info" id="studentDetail" aria-live="polite"></div>
-            </div>
+        <!-- Student Detail Section -->
+        <div class="student-detail">
+          <div class="student-detail-title">Student Information</div>
+          <div
+            class="student-detail-info"
+            id="studentDetail"
+            aria-live="polite"
+          ></div>
         </div>
+      </div>
 
-        <!-- ONE form for both "add" and "edit" (the title and the save button change) -->
-        <div class="modal" id="studentModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-            <form class="student-form" id="studentForm" method="post">
-                <h2 id="modalTitle">➕ Add New Student</h2>
-                <div class="form-alert" data-form-error role="alert" hidden></div>
+      <!-- ONE form for both "add" and "edit" (the title and the save button change) -->
+      <div
+        class="modal"
+        id="studentModal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalTitle"
+      >
+        <form class="student-form" id="studentForm" method="post">
+          <h2 id="modalTitle">➕ Add New Student</h2>
+          <div class="form-alert" data-form-error role="alert" hidden></div>
 
-                <div class="form-row">
-                    <div class="field">
-                        <label for="f-firstName">First name</label>
-                        <input type="text" id="f-firstName" name="firstName" required minlength="2" maxlength="50" autocomplete="off">
-                        <p class="field-error" data-error-for="firstName" hidden></p>
-                    </div>
-                    <div class="field">
-                        <label for="f-lastName">Last name</label>
-                        <input type="text" id="f-lastName" name="lastName" required minlength="2" maxlength="50" autocomplete="off">
-                        <p class="field-error" data-error-for="lastName" hidden></p>
-                    </div>
-                </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="f-firstName">First name</label>
+              <input
+                type="text"
+                id="f-firstName"
+                name="firstName"
+                required
+                minlength="2"
+                maxlength="50"
+                autocomplete="off"
+              />
+              <p class="field-error" data-error-for="firstName" hidden></p>
+            </div>
+            <div class="field">
+              <label for="f-lastName">Last name</label>
+              <input
+                type="text"
+                id="f-lastName"
+                name="lastName"
+                required
+                minlength="2"
+                maxlength="50"
+                autocomplete="off"
+              />
+              <p class="field-error" data-error-for="lastName" hidden></p>
+            </div>
+          </div>
 
-                <div class="field">
-                    <label for="f-studentCode">Student ID</label>
-                    <input type="text" id="f-studentCode" name="studentCode" required placeholder="MU-2026-011"
-                           pattern="[Mm][Uu]-[0-9]{4}-[0-9]{3,4}" title="Looks like MU-2026-011" autocomplete="off">
-                    <p class="field-error" data-error-for="studentCode" hidden></p>
-                </div>
+          <div class="field">
+            <label for="f-studentCode">Student ID</label>
+            <input
+              type="text"
+              id="f-studentCode"
+              name="studentCode"
+              required
+              placeholder="MU-2026-011"
+              pattern="[Mm][Uu]-[0-9]{4}-[0-9]{3,4}"
+              title="Looks like MU-2026-011"
+              autocomplete="off"
+            />
+            <p class="field-error" data-error-for="studentCode" hidden></p>
+          </div>
 
-                <div class="field">
-                    <label for="f-email">Email address</label>
-                    <input type="email" id="f-email" name="email" required maxlength="120" autocomplete="off">
-                    <p class="field-error" data-error-for="email" hidden></p>
-                </div>
+          <div class="field">
+            <label for="f-email">Email address</label>
+            <input
+              type="email"
+              id="f-email"
+              name="email"
+              required
+              maxlength="120"
+              autocomplete="off"
+            />
+            <p class="field-error" data-error-for="email" hidden></p>
+          </div>
 
-                <div class="form-row">
-                    <div class="field">
-                        <label for="f-phone">Phone number</label>
-                        <input type="tel" id="f-phone" name="phone" required placeholder="0712 345 678" autocomplete="off">
-                        <p class="field-error" data-error-for="phone" hidden></p>
-                    </div>
-                    <div class="field">
-                        <label for="f-grade">Grade (0-100 %)</label>
-                        <input type="number" id="f-grade" name="grade" required min="0" max="100" step="0.1">
-                        <p class="field-error" data-error-for="grade" hidden></p>
-                    </div>
-                </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="f-phone">Phone number</label>
+              <input
+                type="tel"
+                id="f-phone"
+                name="phone"
+                required
+                placeholder="0712 345 678"
+                autocomplete="off"
+              />
+              <p class="field-error" data-error-for="phone" hidden></p>
+            </div>
+            <div class="field">
+              <label for="f-grade">Grade (0-100 %)</label>
+              <input
+                type="number"
+                id="f-grade"
+                name="grade"
+                required
+                min="0"
+                max="100"
+                step="0.1"
+              />
+              <p class="field-error" data-error-for="grade" hidden></p>
+            </div>
+          </div>
 
-                <div class="field">
-                    <label for="f-programId">Course</label>
-                    <select id="f-programId" name="programId" required>
-                        <option value="">Select Course</option>
-                    </select>
-                    <p class="field-error" data-error-for="programId" hidden></p>
-                </div>
+          <div class="field">
+            <label for="f-programId">Course</label>
+            <select id="f-programId" name="programId" required>
+              <option value="">Select Course</option>
+            </select>
+            <p class="field-error" data-error-for="programId" hidden></p>
+          </div>
 
-                <div class="field">
-                    <label for="f-address">Physical address</label>
-                    <input type="text" id="f-address" name="address" required minlength="3" maxlength="200" autocomplete="off">
-                    <p class="field-error" data-error-for="address" hidden></p>
-                </div>
+          <div class="field">
+            <label for="f-address">Physical address</label>
+            <input
+              type="text"
+              id="f-address"
+              name="address"
+              required
+              minlength="3"
+              maxlength="200"
+              autocomplete="off"
+            />
+            <p class="field-error" data-error-for="address" hidden></p>
+          </div>
 
-                <div class="form-row">
-                    <div class="field">
-                        <label for="f-dob">Date of birth</label>
-                        <input type="date" id="f-dob" name="dob" required>
-                        <p class="field-error" data-error-for="dob" hidden></p>
-                    </div>
-                    <div class="field">
-                        <label for="f-imageUrl">Photo address (optional, https)</label>
-                        <input type="url" id="f-imageUrl" name="imageUrl" maxlength="300" placeholder="https://..." autocomplete="off">
-                        <p class="field-error" data-error-for="imageUrl" hidden></p>
-                    </div>
-                </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="f-dob">Date of birth</label>
+              <input type="date" id="f-dob" name="dob" required />
+              <p class="field-error" data-error-for="dob" hidden></p>
+            </div>
+            <div class="field">
+              <label for="f-imageUrl">Photo address (optional, https)</label>
+              <input
+                type="url"
+                id="f-imageUrl"
+                name="imageUrl"
+                maxlength="300"
+                placeholder="https://..."
+                autocomplete="off"
+              />
+              <p class="field-error" data-error-for="imageUrl" hidden></p>
+            </div>
+          </div>
 
-                <div class="form-actions">
-                    <button type="submit" class="student-form-submit" id="saveBtn">Save Student</button>
-                    <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
-                </div>
-            </form>
-        </div>
+          <div class="form-actions">
+            <button type="submit" class="student-form-submit" id="saveBtn">
+              Save Student
+            </button>
+            <button type="button" class="cancel-btn" id="cancelBtn">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
 
-        <!-- Toast Notifications Container -->
-        <div class="toast-container" id="toastContainer" role="status" aria-live="polite"></div>
+      <!-- Toast Notifications Container -->
+      <div
+        class="toast-container"
+        id="toastContainer"
+        role="status"
+        aria-live="polite"
+      ></div>
     </div>
 
     <!-- Shared helpers first (paths are relative to THIS file, which lives in /e_students/) -->
     <script src="../js/api.js"></script>
     <script src="../js/ui.js"></script>
     <script src="students.js"></script>
-    <a href="../home.html" class="home-link-floating" title="Back to Home" aria-label="Back to Home">
-        <i class="fas fa-home" aria-hidden="true"></i>
+    <a
+      href="../home.html"
+      class="home-link-floating"
+      title="Back to Home"
+      aria-label="Back to Home"
+    >
+      <i class="fas fa-home" aria-hidden="true"></i>
     </a>
-</body>
+  </body>
 </html>

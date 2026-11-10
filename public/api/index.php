@@ -64,6 +64,13 @@ $router->add('GET',    '/api/students/{id}',     [StudentController::class, 'sho
 $router->add('PUT',    '/api/students/{id}',     [StudentController::class, 'update']);
 $router->add('DELETE', '/api/students/{id}',     [StudentController::class, 'destroy']);
 
+// Student self-service. Only a student account may reach these (requireUser('student')).
+$router->add('GET',   '/api/me/student',              [\Mwaki\Controllers\MeController::class, 'showStudent']);
+$router->add('PATCH', '/api/me/student',              [\Mwaki\Controllers\MeController::class, 'updateStudent']);
+
+// Login management for a student record (admins create, admins/staff reset).
+$router->add('POST',  '/api/students/{id}/login',          [StudentController::class, 'createLogin']);
+$router->add('POST',  '/api/students/{id}/reset-password', [StudentController::class, 'resetPassword']);
 $router->add('GET',    '/api/applications',      [AdminController::class, 'applications']);
 $router->add('PATCH',  '/api/applications/{id}', [AdminController::class, 'updateApplication']);
 $router->add('GET',    '/api/inquiries',         [AdminController::class, 'inquiries']);

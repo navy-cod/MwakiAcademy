@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Record - Mwaki University</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="no-sidebar">
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <header class="top-header">
+      <div class="logo-area">
+        <img
+          src="multimedia/mwaki_logo.png"
+          data-fallback="https://placehold.co/60x60?text=Mwaki"
+          alt="Mwaki University Logo"
+        />
+        <p class="site-name">MWAKI UNIVERSITY</p>
+      </div>
+      <button
+        class="nav-toggle"
+        type="button"
+        aria-controls="site-nav"
+        aria-expanded="false"
+        aria-label="Toggle navigation menu"
+      >
+        <i class="fas fa-bars" aria-hidden="true"></i>
+      </button>
+      <nav class="desktop-nav" id="site-nav" aria-label="Main">
+        <a href="home.html">Home</a>
+        <a href="faculties.html">Programs</a>
+        <a href="admission.html">Admissions</a>
+        <a href="tuition.html">Tuition</a>
+        <a href="contact.html">Contact</a>
+        <a href="about.html">About</a>
+        <a href="login.html" data-auth-link>Login</a>
+      </nav>
+    </header>
+
+    <main class="main-wrapper" id="main">
+      <h1 class="page-title">
+        <i class="fas fa-user-graduate" aria-hidden="true"></i> My Student
+        Record
+      </h1>
+      <p class="page-subtitle" id="portalSubtitle" role="status">
+        Loading your record...
+      </p>
+
+      <!-- READ-ONLY identity card -->
+      <section
+        class="card portal-card"
+        id="identityCard"
+        aria-labelledby="identityTitle"
+        hidden
+      >
+        <h2 id="identityTitle">Your details</h2>
+        <dl class="record-list" id="recordList"></dl>
+        <p class="status-note">
+          <i class="fas fa-info-circle" aria-hidden="true"></i>
+          Your name, email, student ID, program, grade and date of birth are
+          managed by the university. Contact the registry if any of them are
+          wrong.
+        </p>
+      </section>
+
+      <!-- EDITABLE contact card -->
+      <section
+        class="form-card stack-gap"
+        id="contactCard"
+        aria-labelledby="contactTitle"
+        hidden
+      >
+        <h2 id="contactTitle">Your contact details</h2>
+        <p>
+          Keep these up to date so the university can reach you. Your phone,
+          address and photo are yours to change.
+        </p>
+        <form id="contactForm" method="post">
+          <div class="form-alert" data-form-error role="alert" hidden></div>
+
+          <label for="contactPhone">Phone number</label>
+          <input
+            type="tel"
+            id="contactPhone"
+            name="phone"
+            required
+            placeholder="0712 345 678"
+            autocomplete="tel"
+          />
+          <p class="field-error" data-error-for="phone" hidden></p>
+
+          <label for="contactAddress">Physical address</label>
+          <input
+            type="text"
+            id="contactAddress"
+            name="address"
+            required
+            minlength="3"
+            maxlength="200"
+            autocomplete="street-address"
+          />
+          <p class="field-error" data-error-for="address" hidden></p>
+
+          <label for="contactImage">Photo address (optional, https)</label>
+          <input
+            type="url"
+            id="contactImage"
+            name="imageUrl"
+            maxlength="300"
+            placeholder="https://..."
+            autocomplete="off"
+          />
+          <p class="field-error" data-error-for="imageUrl" hidden></p>
+
+          <button type="submit" class="btn">
+            <i class="fas fa-save" aria-hidden="true"></i> Save contact details
+          </button>
+        </form>
+      </section>
+
+      <!-- Change password -->
+      <section
+        class="form-card stack-gap"
+        id="passwordCard"
+        aria-labelledby="passwordTitle"
+        hidden
+      >
+        <h2 id="passwordTitle">Change my password</h2>
+        <p>Use at least 12 characters. You stay signed in on this device.</p>
+        <form id="passwordForm" method="post">
+          <div class="form-alert" data-form-error role="alert" hidden></div>
+
+          <label for="currentPassword">Current password</label>
+          <input
+            type="password"
+            id="currentPassword"
+            name="currentPassword"
+            required
+            maxlength="200"
+            autocomplete="current-password"
+          />
+          <p class="field-error" data-error-for="currentPassword" hidden></p>
+
+          <label for="newPassword">New password</label>
+          <input
+            type="password"
+            id="newPassword"
+            name="newPassword"
+            required
+            minlength="12"
+            maxlength="200"
+            autocomplete="new-password"
+          />
+          <p class="field-error" data-error-for="newPassword" hidden></p>
+
+          <label for="confirmPassword">Repeat the new password</label>
+          <input
+            type="password"
+            id="confirmPassword"
+            name="confirmPassword"
+            required
+            minlength="12"
+            maxlength="200"
+            autocomplete="new-password"
+          />
+          <p class="field-error" data-error-for="confirmPassword" hidden></p>
+
+          <button type="submit" class="btn">
+            <i class="fas fa-key" aria-hidden="true"></i> Change password
+          </button>
+        </form>
+      </section>
+
+      <div class="hero-buttons stack-gap" id="portalActions" hidden>
+        <a href="home.html" class="btn btn-outline"
+          ><i class="fas fa-home" aria-hidden="true"></i> Back to Home</a
+        >
+        <button type="button" id="logoutBtn" class="btn btn-outline">
+          <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Sign out
+        </button>
+      </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/nav.js"></script>
+    <script src="student-portal.js"></script>
+  </body>
+</html>
